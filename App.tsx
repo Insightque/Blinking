@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Settings, Play, Pause, BookOpen, Brain, ChevronRight, ChevronLeft, CheckCircle2, Home, Clock, Plus, Minus, Repeat } from 'lucide-react';
 import { AppMode, Category, SessionSettings, WordItem } from './types';
@@ -21,8 +20,8 @@ const App: React.FC = () => {
   const [isEnglishRevealed, setIsEnglishRevealed] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   
-  // Timer Refs
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Timer Refs - Use any to avoid NodeJS.Timeout vs number conflict in browser build
+  const timerRef = useRef<any>(null);
 
   // --- Handlers ---
 
@@ -44,17 +43,13 @@ const App: React.FC = () => {
   };
 
   const handleNextWord = useCallback(() => {
-    setWords(currentWords => {
-        if (currentIndex < currentWords.length - 1) {
-            setCurrentIndex(prev => prev + 1);
-            setIsEnglishRevealed(false);
-            return currentWords;
-        } else {
-            setMode(AppMode.SUMMARY);
-            return currentWords;
-        }
-    });
-  }, [currentIndex]);
+    if (currentIndex < words.length - 1) {
+      setCurrentIndex(prev => prev + 1);
+      setIsEnglishRevealed(false);
+    } else {
+      setMode(AppMode.SUMMARY);
+    }
+  }, [currentIndex, words.length]);
 
   const handlePreviousWord = useCallback(() => {
     if (currentIndex > 0) {
@@ -78,7 +73,7 @@ const App: React.FC = () => {
   useEffect(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
 
-    if (mode === AppMode.SESSION && !isPaused) {
+    if (mode === AppMode.SESSION && !isPaused && words.length > 0) {
       if (!isEnglishRevealed) {
         timerRef.current = setTimeout(() => {
           setIsEnglishRevealed(true);
@@ -93,7 +88,7 @@ const App: React.FC = () => {
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [mode, currentIndex, isEnglishRevealed, isPaused, settings.revealDelay, settings.autoAdvanceDelay, handleNextWord]);
+  }, [mode, currentIndex, isEnglishRevealed, isPaused, settings.revealDelay, settings.autoAdvanceDelay, handleNextWord, words.length]);
 
   // --- Renders ---
 
@@ -170,8 +165,8 @@ const App: React.FC = () => {
     );
   }
 
-  const currentWord = words[currentIndex];
-  const progress = ((currentIndex + 1) / words.length) * 100;
+  const currentWord: WordItem | undefined = words[currentIndex];
+  const progress = words.length > 0 ? ((currentIndex + 1) / words.length) * 100 : 0;
 
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col">
@@ -198,18 +193,18 @@ const App: React.FC = () => {
 
       <main className="flex-1 flex flex-col items-center justify-center p-4">
         <div className="w-full max-w-2xl relative">
-          <div key={currentIndex} className="bg-white rounded-3xl shadow-xl overflow-hidden min-h-[420px] flex flex-col relative animate-in fade-in slide-in-from-bottom-4 duration-300">
+          <div key={currentIndex} className="bg-white rounded-3xl shadow-xl overflow-hidden min-h-[420px] flex flex-col relative animate-in fade-in slide-in-from-bottom-4">
             <div className="h-2 bg-indigo-500 w-full" />
             <div className="px-8 py-4 flex justify-between items-center border-b border-slate-50">
               <span className="px-3 py-1 bg-slate-100 text-slate-600 rounded-full text-xs font-bold uppercase">{currentWord?.partOfSpeech}</span>
               <div className="flex items-center gap-3">
-                {currentWord?.reviewCount && (
+                {currentWord && currentWord.reviewCount > 0 && (
                   <span className="flex items-center gap-1 text-[10px] font-bold text-indigo-500 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-100">
                     <Repeat size={10} />
                     {currentWord.reviewCount}회독
                   </span>
                 )}
-                <span className="text-slate-300 font-mono text-xs">ID: {currentWord?.id.split('-')[1]}</span>
+                <span className="text-slate-300 font-mono text-xs">ID: {currentWord?.id?.split('-')?.[1] || '0'}</span>
               </div>
             </div>
 
@@ -258,7 +253,7 @@ const App: React.FC = () => {
                 <Button onClick={handleNextWord} className="px-6 py-4"><ChevronRight size={24} /></Button>
               </div>
             </div>
-            {!isPaused && (
+            {!isPaused && words.length > 0 && (
               <div key={`timer-${currentIndex}-${isEnglishRevealed}`} className={`absolute bottom-0 left-0 h-1 transition-all ease-linear ${isEnglishRevealed ? 'bg-teal-500' : 'bg-indigo-600'}`}
                  style={{ width: '100%', transitionDuration: isEnglishRevealed ? `${settings.autoAdvanceDelay}s` : `${settings.revealDelay}s` }} />
             )}
