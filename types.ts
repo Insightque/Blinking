@@ -3,33 +3,28 @@ export enum AppMode {
   WELCOME = 'WELCOME',
   LOADING = 'LOADING',
   SESSION = 'SESSION',
-  SUMMARY = 'SUMMARY'
+  SUMMARY = 'SUMMARY',
+  CUSTOM_INPUT = 'CUSTOM_INPUT'
 }
 
 export enum Category {
   OPIC = 'OPIC',
-  AI_ENGINEERING = 'AI_ENGINEERING'
+  AI_ENGINEERING = 'AI_ENGINEERING',
+  CUSTOM = 'CUSTOM'
 }
 
 export interface WordItem {
   id: string;
   korean: string;
   english: string;
-  partOfSpeech: string; // verb, noun, adjective, adverb
+  partOfSpeech: string;
   example?: string;
-  reviewCount: number; // 몇 회독째인지 기록
+  reviewCount: number;
 }
 
 export interface SessionSettings {
   category: Category;
-  revealDelay: number; // Seconds to wait before showing English
-  autoAdvanceDelay: number; // Seconds to wait before moving to next word
-  batchSize: number; // usually 100
-}
-
-export interface FlashcardState {
-  currentIndex: number;
-  isEnglishRevealed: boolean;
-  words: WordItem[];
-  isPaused: boolean;
+  revealDelay: number;
+  autoAdvanceDelay: number;
+  batchSize: number;
 }
