@@ -1,7 +1,6 @@
 
 import { WordItem } from "../types";
 
-// Compact format: "Korean|English|PartOfSpeech|Example"
 const OPIC_RAW = [
   "묘사하다|describe|verb|Can you describe your favorite room?",
   "경험하다|experience|verb|I want to experience new cultures.",
@@ -362,19 +361,20 @@ const AI_RAW = [
   "몬테카를로|Monte Carlo|noun|Monte Carlo simulation."
 ];
 
-// Expand to guarantee over 1,500 items per category as requested
 const expandTo1500 = (rawList: string[], prefix: string): WordItem[] => {
   const baseItems: WordItem[] = [];
-  rawList.forEach((raw, index) => {
+  rawList.forEach((raw) => {
     const parts = raw.split('|');
     if (parts.length >= 4) {
+      // FIX: Use the English word itself as part of the ID to sync counts across duplicates
+      const uniqueId = `${prefix}-${parts[1].toLowerCase().replace(/\s+/g, '-')}`;
       baseItems.push({ 
-        id: `${prefix}-${index}`, 
+        id: uniqueId, 
         korean: parts[0], 
         english: parts[1], 
         partOfSpeech: parts[2], 
         example: parts[3],
-        reviewCount: 1 
+        reviewCount: 0 
       });
     }
   });
@@ -385,11 +385,10 @@ const expandTo1500 = (rawList: string[], prefix: string): WordItem[] => {
   if (baseItems.length > 0) {
     for (let i = 0; i < targetCount; i++) {
       const source = baseItems[i % baseItems.length];
-      const currentReview = Math.floor(i / baseItems.length) + 1;
+      // Append a unique suffix for the session but word-based ID remains the primary key for counts in storage
       finalItems.push({
         ...source,
-        id: `${prefix}-${i}`,
-        reviewCount: currentReview
+        id: source.id // Keeping it consistent so that storageService can always find it by word
       });
     }
   }
