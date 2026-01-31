@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Settings, Play, Pause, BookOpen, Brain, ChevronRight, ChevronLeft, CheckCircle2, Home, Clock, Plus, Minus, Repeat, Sparkles, Copy, ClipboardCheck, Volume2 } from 'lucide-react';
+import { Settings, Play, Pause, BookOpen, Brain, ChevronRight, ChevronLeft, CheckCircle2, Home, Clock, Plus, Minus, Repeat, Sparkles, Copy, ClipboardCheck, Volume2, Type } from 'lucide-react';
 import { AppMode, Category, SessionSettings, WordItem } from './types';
 import { getWordsFromDatabase } from './services/wordService';
 import { incrementReviewCount } from './services/storageService';
@@ -21,11 +21,22 @@ const App: React.FC = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isEnglishRevealed, setIsEnglishRevealed] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
+  
+  // Custom Topic States
+  const [customTopic, setCustomTopic] = useState('');
   const [customInput, setCustomInput] = useState('');
   const [copied, setCopied] = useState(false);
   
   const timerRef = useRef<any>(null);
   const tickIntervalRef = useRef<any>(null);
+
+  const getDynamicPrompt = (topic: string) => {
+    const targetTopic = topic.trim() || "[주제 입력]";
+    return `Please generate a list of 20 high-frequency English vocabulary words for the topic: ${targetTopic}.
+Provide the result strictly as a JSON array of objects with keys: "korean", "english", "partOfSpeech", "example".
+The partOfSpeech should be one of: verb, noun, adjective, adverb.
+Example: [ { "korean": "결과", "english": "outcome", "partOfSpeech": "noun", "example": "The outcome was good." } ]`;
+  };
 
   const handleStartSession = async (category: Category, customWords?: WordItem[]) => {
     setSettings(prev => ({ ...prev, category }));
@@ -73,6 +84,7 @@ const App: React.FC = () => {
     }));
   };
 
+  // 회독수 즉시 반영 로직
   const recordStudy = useCallback((wordId: string) => {
     const newCount = incrementReviewCount(wordId);
     setWords(prev => prev.map(w => w.id === wordId ? { ...w, reviewCount: newCount } : w));
@@ -114,7 +126,7 @@ const App: React.FC = () => {
       const parsed = JSON.parse(customInput);
       if (!Array.isArray(parsed)) throw new Error("Must be an array");
       const formatted: WordItem[] = parsed.map((item, i) => ({
-        id: `custom-${item.english?.toLowerCase().replace(/\s+/g, '-') || Date.now()}`,
+        id: `custom-${item.english?.toLowerCase().replace(/\s+/g, '-') || Date.now()}-${i}`,
         korean: item.korean || 'N/A',
         english: item.english || 'N/A',
         partOfSpeech: item.partOfSpeech || 'unknown',
@@ -123,7 +135,7 @@ const App: React.FC = () => {
       }));
       handleStartSession(Category.CUSTOM, formatted);
     } catch (e) {
-      alert("Invalid JSON format. Please follow the instructions.");
+      alert("Invalid JSON format. Please paste the JSON array exactly as received from Gemini.");
     }
   };
 
@@ -135,39 +147,39 @@ const App: React.FC = () => {
             <h1 className="text-5xl md:text-6xl font-black text-slate-900 tracking-tighter">
               Lingo<span className="text-indigo-600">Focus</span>
             </h1>
-            <p className="text-slate-400 text-lg font-semibold tracking-tight">Smart Vocabulary Trainer</p>
+            <p className="text-slate-400 text-lg font-semibold tracking-tight">Professional Vocabulary Trainer</p>
           </div>
 
-          {/* 가로형 슬림 메뉴 */}
-          <div className="flex flex-row gap-4 w-full justify-center">
+          {/* 슬림 가로 배치 메뉴 */}
+          <div className="flex flex-row gap-4 w-full justify-center max-w-3xl mx-auto">
             <HomeCard 
-              icon={<BookOpen size={24} />} 
+              icon={<BookOpen size={20} />} 
               title="OPIc" 
-              desc="Natural Speaking"
+              desc="Speaking"
               color="orange"
               onClick={() => handleStartSession(Category.OPIC)}
             />
             <HomeCard 
-              icon={<Brain size={24} />} 
-              title="AI & Tech" 
-              desc="Professional R&D"
+              icon={<Brain size={20} />} 
+              title="AI Tech" 
+              desc="Technical"
               color="blue"
               onClick={() => handleStartSession(Category.AI_ENGINEERING)}
             />
             <HomeCard 
-              icon={<Sparkles size={24} />} 
+              icon={<Sparkles size={20} />} 
               title="Custom" 
-              desc="Gemini Powered"
+              desc="AI Theme"
               color="indigo"
               onClick={() => setMode(AppMode.CUSTOM_INPUT)}
             />
           </div>
 
-          <div className="flex justify-center gap-6 text-slate-400 font-bold text-xs uppercase tracking-widest">
-            <span className="flex items-center gap-1.5"><Volume2 size={14} /> TTS</span>
-            <span className="flex items-center gap-1.5"><Clock size={14} /> Interval</span>
-            <span className="flex items-center gap-1.5"><Repeat size={14} /> Progress</span>
-            <button onClick={() => setIsSettingsOpen(true)} className="flex items-center gap-1.5 hover:text-indigo-600 transition-colors"><Settings size={14} /> Settings</button>
+          <div className="flex justify-center gap-6 text-slate-400 font-bold text-[10px] uppercase tracking-widest">
+            <span className="flex items-center gap-1.5"><Volume2 size={12} /> Auto Speech</span>
+            <span className="flex items-center gap-1.5"><Clock size={12} /> Smart Timer</span>
+            <span className="flex items-center gap-1.5"><Repeat size={12} /> Mastery Sync</span>
+            <button onClick={() => setIsSettingsOpen(true)} className="flex items-center gap-1.5 hover:text-indigo-600 transition-colors"><Settings size={12} /> Settings</button>
           </div>
         </div>
 
@@ -183,42 +195,67 @@ const App: React.FC = () => {
 
   if (mode === AppMode.CUSTOM_INPUT) {
     return (
-      <div className="min-h-screen bg-white p-6 md:p-12 overflow-auto">
+      <div className="min-h-screen bg-white p-6 md:p-10 overflow-auto">
         <div className="max-w-4xl mx-auto space-y-8">
           <header className="flex items-center justify-between border-b pb-6">
-            <button onClick={() => setMode(AppMode.WELCOME)} className="flex items-center gap-2 text-slate-400 hover:text-slate-800 transition-colors font-bold uppercase text-sm">
-              <ChevronLeft size={20} /> Back
+            <button onClick={() => setMode(AppMode.WELCOME)} className="flex items-center gap-2 text-slate-400 hover:text-slate-800 transition-colors font-bold uppercase text-xs">
+              <ChevronLeft size={18} /> Exit
             </button>
-            <h2 className="text-2xl font-black text-slate-900 tracking-tight">AI Topic Generator</h2>
+            <h2 className="text-xl font-black text-slate-900 tracking-tight">AI Topic Generator</h2>
           </header>
 
           <div className="grid md:grid-cols-2 gap-8">
-            <section className="bg-slate-900 rounded-3xl p-6 text-white space-y-4 shadow-xl">
-              <div className="flex items-center justify-between">
-                <h3 className="font-bold flex items-center gap-2 text-indigo-400"><Sparkles size={16} /> Step 1: Prompt</h3>
-                <button 
-                  onClick={() => { navigator.clipboard.writeText("Prompt template here..."); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
-                  className="bg-white/10 hover:bg-white/20 p-2 rounded-xl transition-all"
+            <section className="space-y-4">
+              <div className="bg-indigo-600 rounded-2xl p-6 text-white space-y-4 shadow-lg">
+                <h3 className="font-bold flex items-center gap-2 text-indigo-100 text-sm"><Sparkles size={16} /> Step 1: Injects Topic</h3>
+                
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-indigo-200">주제 입력 (예: Camping)</label>
+                  <input 
+                    type="text"
+                    value={customTopic}
+                    onChange={(e) => setCustomTopic(e.target.value)}
+                    placeholder="원하는 주제를 입력하세요..."
+                    className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-2 text-sm focus:bg-white/20 outline-none placeholder:text-white/40"
+                  />
+                </div>
+
+                <div className="bg-black/20 p-4 rounded-xl font-mono text-[10px] text-indigo-100 border border-white/5 whitespace-pre-wrap h-32 overflow-auto">
+                  {getDynamicPrompt(customTopic)}
+                </div>
+
+                <Button 
+                  fullWidth 
+                  variant="secondary" 
+                  onClick={() => { 
+                    navigator.clipboard.writeText(getDynamicPrompt(customTopic)); 
+                    setCopied(true); 
+                    setTimeout(() => setCopied(false), 2000); 
+                  }}
+                  className="py-3 text-xs bg-white text-indigo-600 hover:bg-indigo-50 border-none"
                 >
-                  {copied ? <ClipboardCheck size={18} className="text-green-400" /> : <Copy size={18} />}
-                </button>
+                  <div className="flex items-center justify-center gap-2">
+                    {copied ? <ClipboardCheck size={14} /> : <Copy size={14} />}
+                    {copied ? "복사 완료!" : "프롬프트 복사하기"}
+                  </div>
+                </Button>
               </div>
-              <p className="text-slate-400 text-xs leading-relaxed">Copy the prompt and use it in Gemini to get custom words.</p>
-              <div className="bg-black/30 p-4 rounded-xl font-mono text-[11px] text-indigo-200 border border-white/5 whitespace-pre-wrap">
-                Please generate a JSON array of 20 English vocabulary words for [TOPIC]. Keys: "korean", "english", "partOfSpeech", "example".
-              </div>
+              <p className="text-[11px] text-slate-400 font-medium px-2">복사한 내용을 Gemini에 붙여넣어 단어 리스트(JSON)를 받으세요.</p>
             </section>
 
             <section className="space-y-4">
-              <h3 className="font-bold text-slate-800 text-sm flex items-center gap-2"><div className="w-5 h-5 bg-indigo-600 rounded-full flex items-center justify-center text-white text-[10px]">2</div> Paste JSON</h3>
+              <h3 className="font-bold text-slate-800 text-sm flex items-center gap-2">
+                <div className="w-5 h-5 bg-indigo-600 rounded-full flex items-center justify-center text-white text-[10px]">2</div> 
+                Paste Result (JSON)
+              </h3>
               <textarea 
                 value={customInput}
                 onChange={(e) => setCustomInput(e.target.value)}
-                placeholder="[ { 'korean': '...', 'english': '...', ... } ]"
-                className="w-full h-[220px] p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-indigo-500 outline-none font-mono text-xs"
+                placeholder="Gemini가 생성한 [ ... ] 대괄호 포함 전체 코드를 붙여넣으세요."
+                className="w-full h-[230px] p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-indigo-500 outline-none font-mono text-[11px]"
               />
-              <Button fullWidth onClick={handleCustomSubmit} disabled={!customInput.trim()} className="py-4">
-                Start Session
+              <Button fullWidth onClick={handleCustomSubmit} disabled={!customInput.trim()} className="py-4 shadow-indigo-100 shadow-lg">
+                학습 시작하기
               </Button>
             </section>
           </div>
@@ -227,16 +264,16 @@ const App: React.FC = () => {
     );
   }
 
-  if (mode === AppMode.LOADING) return <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50"><div className="w-12 h-12 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin mb-4"></div><h2 className="text-lg font-black text-slate-800">LOADING WORDS...</h2></div>;
+  if (mode === AppMode.LOADING) return <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50"><div className="w-10 h-10 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin mb-4"></div><h2 className="text-sm font-black text-slate-800 tracking-widest">LOADING SESSION...</h2></div>;
 
   if (mode === AppMode.SUMMARY) return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-indigo-600 p-6">
-      <div className="bg-white p-10 rounded-[2.5rem] shadow-2xl max-w-sm w-full text-center space-y-6">
-        <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto text-green-600"><CheckCircle2 size={32} /></div>
-        <h2 className="text-2xl font-black text-slate-900 tracking-tight">SESSION DONE</h2>
+      <div className="bg-white p-8 rounded-[2.5rem] shadow-2xl max-w-xs w-full text-center space-y-6">
+        <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center mx-auto text-green-600"><CheckCircle2 size={28} /></div>
+        <h2 className="text-xl font-black text-slate-900 tracking-tight">SESSION COMPLETED</h2>
         <div className="flex flex-col gap-2">
-          <Button onClick={() => handleStartSession(settings.category)}>Restart</Button>
-          <Button variant="secondary" onClick={() => setMode(AppMode.WELCOME)}>Home</Button>
+          <Button onClick={() => handleStartSession(settings.category)} className="py-4">다시 하기</Button>
+          <Button variant="secondary" onClick={() => setMode(AppMode.WELCOME)} className="py-4">메인으로</Button>
         </div>
       </div>
     </div>
@@ -247,80 +284,80 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col select-none overflow-hidden">
-      <header className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between sticky top-0 z-20">
+      <header className="bg-white border-b border-slate-200 px-6 py-3 flex items-center justify-between sticky top-0 z-20">
         <button onClick={() => setMode(AppMode.WELCOME)} className="flex items-center gap-2 group">
-          <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-black text-sm">LF</div>
-          <span className="font-black text-lg text-slate-800 tracking-tighter">LingoFocus</span>
+          <div className="w-7 h-7 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-black text-xs">LF</div>
+          <span className="font-black text-base text-slate-800 tracking-tighter">LingoFocus</span>
         </button>
         <div className="flex-1 max-w-md mx-6">
-          <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden border border-slate-200">
+          <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
             <div className="h-full bg-indigo-600 transition-all duration-700 ease-out" style={{ width: `${progress}%` }} />
           </div>
-          <p className="text-[10px] text-center text-slate-400 mt-1 font-bold uppercase tracking-widest">{currentIndex + 1} / {words.length}</p>
+          <p className="text-[9px] text-center text-slate-400 mt-1 font-bold uppercase tracking-widest">{currentIndex + 1} / {words.length}</p>
         </div>
-        <button onClick={() => setIsSettingsOpen(true)} className="p-2 hover:bg-slate-100 rounded-xl text-slate-500"><Settings size={20} /></button>
+        <button onClick={() => setIsSettingsOpen(true)} className="p-2 hover:bg-slate-100 rounded-xl text-slate-500"><Settings size={18} /></button>
       </header>
 
       <main className="flex-1 flex flex-col items-center justify-center p-4">
-        <div className="w-full max-w-2xl">
-          <div key={currentIndex} className="bg-white rounded-[2.5rem] shadow-xl overflow-hidden min-h-[480px] flex flex-col relative animate-in fade-in slide-in-from-bottom-4 transition-all border border-slate-50">
-            <div className="h-2 bg-indigo-500 w-full" />
+        <div className="w-full max-w-xl">
+          <div key={currentIndex} className="bg-white rounded-[2rem] shadow-xl overflow-hidden min-h-[440px] flex flex-col relative animate-in fade-in slide-in-from-bottom-4 transition-all border border-slate-50">
+            <div className="h-1.5 bg-indigo-500 w-full" />
             
-            <div className="px-8 py-4 flex justify-between items-center border-b border-slate-100">
-              <span className="px-3 py-1 bg-indigo-600 text-white rounded-lg text-[10px] font-black uppercase tracking-widest">{currentWord?.partOfSpeech}</span>
-              <div className="flex items-center gap-2 text-indigo-600 bg-indigo-50 px-3 py-1 rounded-lg border border-indigo-100">
-                <Repeat size={12} strokeWidth={3} />
-                <span className="text-xs font-black">{currentWord?.reviewCount || 0}</span>
+            <div className="px-6 py-3 flex justify-between items-center border-b border-slate-50 bg-slate-50/30">
+              <span className="px-2.5 py-0.5 bg-indigo-600 text-white rounded-md text-[9px] font-black uppercase tracking-widest">{currentWord?.partOfSpeech}</span>
+              <div className="flex items-center gap-1.5 text-indigo-600 bg-white px-2.5 py-0.5 rounded-md border border-indigo-100 shadow-sm">
+                <Repeat size={10} strokeWidth={3} />
+                <span className="text-[11px] font-black">{currentWord?.reviewCount || 0} Mastery</span>
               </div>
             </div>
 
             <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
-              <div className="space-y-4 mb-8">
-                <span className="text-slate-300 text-[10px] font-black uppercase tracking-widest">Meaning</span>
+              <div className="space-y-3 mb-8">
+                <span className="text-slate-300 text-[9px] font-black uppercase tracking-widest">Meaning</span>
                 <h2 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tight leading-tight">{currentWord?.korean}</h2>
               </div>
 
               {isEnglishRevealed ? (
                 <div className="space-y-6 animate-in fade-in zoom-in duration-500">
-                  <div className="w-16 h-1.5 bg-indigo-600 mx-auto rounded-full"></div>
-                  <div className="space-y-2">
-                    <span className="text-indigo-400 text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-1.5"><Volume2 size={12} /> Word</span>
+                  <div className="w-12 h-1 bg-indigo-600 mx-auto rounded-full"></div>
+                  <div className="space-y-1.5">
+                    <span className="text-indigo-400 text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-1.5"><Volume2 size={10} /> Pronunciation</span>
                     <h3 className="text-3xl md:text-4xl font-black text-indigo-600 tracking-tight">{currentWord?.english}</h3>
                   </div>
                   {currentWord?.example && (
-                    <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 max-w-md mx-auto">
-                      <p className="text-slate-600 text-sm font-medium italic">"{currentWord.example}"</p>
+                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 max-w-xs mx-auto">
+                      <p className="text-slate-600 text-xs font-medium italic">"{currentWord.example}"</p>
                     </div>
                   )}
                 </div>
               ) : (
-                <div className="h-32 flex items-center justify-center gap-2">
-                  <div className="w-2 h-2 bg-indigo-200 rounded-full animate-bounce" style={{ animationDelay: '0s' }}></div>
-                  <div className="w-2 h-2 bg-indigo-300 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                  <div className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                <div className="h-24 flex items-center justify-center gap-1.5">
+                  <div className="w-1.5 h-1.5 bg-indigo-200 rounded-full animate-bounce" style={{ animationDelay: '0s' }}></div>
+                  <div className="w-1.5 h-1.5 bg-indigo-300 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                  <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                 </div>
               )}
             </div>
 
-            <div className="bg-slate-50 p-6 border-t border-slate-100 space-y-6">
+            <div className="bg-slate-50 p-5 border-t border-slate-100 space-y-5">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3 bg-white p-2 rounded-xl shadow-sm border border-slate-200">
-                  <button onClick={() => adjustAutoDelay(-1)} className="p-1 hover:bg-slate-100 rounded-lg text-slate-400"><Minus size={16} /></button>
-                  <span className="text-sm font-black text-slate-800 min-w-[2rem] text-center">{settings.autoAdvanceDelay}s</span>
-                  <button onClick={() => adjustAutoDelay(1)} className="p-1 hover:bg-slate-100 rounded-lg text-slate-400"><Plus size={16} /></button>
+                <div className="flex items-center gap-2 bg-white p-1.5 rounded-lg shadow-sm border border-slate-200">
+                  <button onClick={() => adjustAutoDelay(-1)} className="p-1 hover:bg-slate-100 rounded-md text-slate-400"><Minus size={14} /></button>
+                  <span className="text-xs font-black text-slate-800 min-w-[1.5rem] text-center">{settings.autoAdvanceDelay}s</span>
+                  <button onClick={() => adjustAutoDelay(1)} className="p-1 hover:bg-slate-100 rounded-md text-slate-400"><Plus size={14} /></button>
                 </div>
-                <div className="px-4 py-2 bg-white rounded-xl shadow-sm border border-slate-200 flex items-center gap-2">
-                  <div className={`w-2 h-2 rounded-full ${isPaused ? 'bg-slate-300' : isEnglishRevealed ? 'bg-teal-500 animate-pulse' : 'bg-indigo-600 animate-pulse'}`} />
-                  <span className="text-[10px] text-slate-400 font-bold uppercase">{isPaused ? 'Paused' : isEnglishRevealed ? 'Next soon' : 'Thinking'}</span>
+                <div className="px-3 py-1 bg-white rounded-lg shadow-sm border border-slate-200 flex items-center gap-2">
+                  <div className={`w-1.5 h-1.5 rounded-full ${isPaused ? 'bg-slate-300' : isEnglishRevealed ? 'bg-teal-500 animate-pulse' : 'bg-indigo-600 animate-pulse'}`} />
+                  <span className="text-[9px] text-slate-400 font-bold uppercase">{isPaused ? 'Paused' : isEnglishRevealed ? 'Next word' : 'Thinking'}</span>
                 </div>
               </div>
 
-              <div className="flex items-center justify-between gap-4">
-                <Button onClick={handlePreviousWord} disabled={currentIndex === 0} variant="secondary" className="px-6 py-3 rounded-2xl"><ChevronLeft size={24} /></Button>
-                <Button onClick={togglePause} variant={isPaused ? "primary" : "outline"} className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-black uppercase">
-                  {isPaused ? <><Play size={18} fill="currentColor" /> Resume</> : <><Pause size={18} fill="currentColor" /> Pause</>}
+              <div className="flex items-center justify-between gap-3">
+                <Button onClick={handlePreviousWord} disabled={currentIndex === 0} variant="secondary" className="px-4 py-2.5 rounded-xl"><ChevronLeft size={20} /></Button>
+                <Button onClick={togglePause} variant={isPaused ? "primary" : "outline"} className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-black uppercase">
+                  {isPaused ? <><Play size={16} fill="currentColor" /> Resume</> : <><Pause size={16} fill="currentColor" /> Pause</>}
                 </Button>
-                <Button onClick={handleNextWord} className="px-6 py-3 rounded-2xl"><ChevronRight size={24} /></Button>
+                <Button onClick={handleNextWord} className="px-4 py-2.5 rounded-xl"><ChevronRight size={20} /></Button>
               </div>
             </div>
 
@@ -344,18 +381,18 @@ const App: React.FC = () => {
 
 const HomeCard = ({ icon, title, desc, color, onClick }: any) => {
   const themes: any = {
-    orange: "bg-orange-50 text-orange-600 border-orange-100 hover:border-orange-500 hover:bg-orange-100 shadow-orange-100/20",
-    blue: "bg-blue-50 text-blue-600 border-blue-100 hover:border-blue-500 hover:bg-blue-100 shadow-blue-100/20",
-    indigo: "bg-indigo-50 text-indigo-600 border-indigo-100 hover:border-indigo-500 hover:bg-indigo-100 shadow-indigo-100/20"
+    orange: "bg-orange-50 text-orange-600 border-orange-100 hover:border-orange-500 hover:bg-orange-100",
+    blue: "bg-blue-50 text-blue-600 border-blue-100 hover:border-blue-500 hover:bg-blue-100",
+    indigo: "bg-indigo-50 text-indigo-600 border-indigo-100 hover:border-indigo-500 hover:bg-indigo-100"
   };
   return (
-    <div onClick={onClick} className={`group cursor-pointer p-6 rounded-3xl shadow-sm transition-all border-2 flex flex-col items-center text-center space-y-3 flex-1 min-w-0 ${themes[color]} transform hover:-translate-y-1`}>
-      <div className="p-3 bg-white rounded-xl shadow-sm group-hover:scale-110 transition-transform group-hover:rotate-3">{icon}</div>
-      <div className="space-y-0.5">
-        <h3 className="text-base font-black tracking-tight uppercase leading-tight">{title}</h3>
-        <p className="text-slate-500 text-[10px] font-bold leading-tight opacity-70 truncate">{desc}</p>
+    <div onClick={onClick} className={`group cursor-pointer p-4 rounded-2xl shadow-sm transition-all border-2 flex flex-col items-center text-center space-y-2 flex-1 min-w-0 ${themes[color]} transform hover:-translate-y-1`}>
+      <div className="p-2 bg-white rounded-xl shadow-sm group-hover:scale-110 transition-transform">{icon}</div>
+      <div className="space-y-0">
+        <h3 className="text-xs font-black tracking-tight uppercase leading-none">{title}</h3>
+        <p className="text-slate-500 text-[9px] font-bold leading-tight opacity-70 truncate mt-1">{desc}</p>
       </div>
-      <div className="pt-1"><span className="px-4 py-1.5 bg-white rounded-full font-black text-[9px] uppercase tracking-widest shadow-xs group-hover:bg-slate-900 group-hover:text-white transition-all">Start &rarr;</span></div>
+      <div className="pt-1"><span className="px-3 py-1 bg-white rounded-full font-black text-[8px] uppercase tracking-widest shadow-xs group-hover:bg-slate-900 group-hover:text-white transition-all">Go &rarr;</span></div>
     </div>
   );
 };
