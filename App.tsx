@@ -141,39 +141,40 @@ Example: [{"korean":"...","english":"...","partOfSpeech":"...","example":"..."}]
   if (mode === AppMode.WELCOME) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-slate-50">
-        <div className="w-full max-w-4xl text-center space-y-10">
+        <div className="w-full max-w-md text-center space-y-8">
           <div className="space-y-2">
-            <h1 className="text-5xl md:text-6xl font-black text-slate-900 tracking-tighter">
+            <h1 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tighter">
               Lingo<span className="text-indigo-600">Focus</span>
             </h1>
-            <p className="text-slate-400 text-lg font-semibold tracking-tight">Professional Vocabulary Trainer</p>
+            <p className="text-slate-400 text-sm font-semibold tracking-tight">Professional Vocabulary Trainer</p>
           </div>
 
-          <div className="flex flex-row gap-4 w-full justify-center max-w-3xl mx-auto overflow-x-auto pb-4 px-2">
+          {/* 슬림 세로 배치 메뉴 (리스트 스타일) */}
+          <div className="flex flex-col gap-3 w-full">
             <HomeCard 
-              icon={<BookOpen size={20} />} 
-              title="OPIc" 
-              desc="Speaking"
+              icon={<BookOpen size={18} />} 
+              title="OPIc Mastery" 
+              desc="Natural speaking phrases"
               color="orange"
               onClick={() => handleStartSession(Category.OPIC)}
             />
             <HomeCard 
-              icon={<Brain size={20} />} 
-              title="AI Tech" 
-              desc="Technical"
+              icon={<Brain size={18} />} 
+              title="AI Tech Vocab" 
+              desc="Engineering & research"
               color="blue"
               onClick={() => handleStartSession(Category.AI_ENGINEERING)}
             />
             <HomeCard 
-              icon={<Sparkles size={20} />} 
-              title="Custom" 
-              desc="AI Theme"
+              icon={<Sparkles size={18} />} 
+              title="AI Custom Session" 
+              desc="Gemini-generated topic"
               color="indigo"
               onClick={() => setMode(AppMode.CUSTOM_INPUT)}
             />
           </div>
 
-          <div className="flex justify-center gap-6 text-slate-400 font-bold text-[10px] uppercase tracking-widest">
+          <div className="flex justify-center gap-6 text-slate-400 font-bold text-[9px] uppercase tracking-widest pt-4">
             <span className="flex items-center gap-1.5"><Volume2 size={12} /> Auto Voice</span>
             <span className="flex items-center gap-1.5"><Clock size={12} /> Timed Reveal</span>
             <button onClick={() => setIsSettingsOpen(true)} className="flex items-center gap-1.5 hover:text-indigo-600 transition-colors"><Settings size={12} /> Preferences</button>
@@ -398,18 +399,22 @@ Example: [{"korean":"...","english":"...","partOfSpeech":"...","example":"..."}]
 
 const HomeCard = ({ icon, title, desc, color, onClick }: any) => {
   const themes: any = {
-    orange: "bg-orange-50 text-orange-600 border-orange-100 hover:border-orange-500 hover:bg-orange-100 shadow-orange-100/30",
-    blue: "bg-blue-50 text-blue-600 border-blue-100 hover:border-blue-500 hover:bg-blue-100 shadow-blue-100/30",
-    indigo: "bg-indigo-50 text-indigo-600 border-indigo-100 hover:border-indigo-500 hover:bg-indigo-100 shadow-indigo-100/30"
+    orange: "bg-orange-50 text-orange-600 border-orange-100 hover:border-orange-500 hover:bg-orange-100 shadow-orange-100/20",
+    blue: "bg-blue-50 text-blue-600 border-blue-100 hover:border-blue-500 hover:bg-blue-100 shadow-blue-100/20",
+    indigo: "bg-indigo-50 text-indigo-600 border-indigo-100 hover:border-indigo-500 hover:bg-indigo-100 shadow-indigo-100/20"
   };
   return (
-    <div onClick={onClick} className={`group cursor-pointer p-5 rounded-2xl shadow-sm transition-all border-2 flex flex-col items-center text-center space-y-2 flex-1 min-w-[120px] ${themes[color]} transform hover:-translate-y-1`}>
-      <div className="p-2.5 bg-white rounded-xl shadow-sm group-hover:scale-110 transition-transform">{icon}</div>
-      <div className="space-y-0.5">
-        <h3 className="text-xs font-black tracking-tight uppercase leading-none">{title}</h3>
-        <p className="text-slate-500 text-[9px] font-bold leading-tight opacity-70 truncate mt-1">{desc}</p>
+    <div onClick={onClick} className={`group cursor-pointer p-4 rounded-2xl shadow-sm transition-all border-2 flex items-center text-left gap-4 w-full ${themes[color]} transform active:scale-[0.98]`}>
+      <div className="p-3 bg-white rounded-xl shadow-sm group-hover:scale-110 transition-transform">
+        {icon}
       </div>
-      <div className="pt-1"><span className="px-3.5 py-1.5 bg-white rounded-full font-black text-[8px] uppercase tracking-widest shadow-sm group-hover:bg-slate-900 group-hover:text-white transition-all">Go &rarr;</span></div>
+      <div className="flex-1 min-w-0">
+        <h3 className="text-sm font-black tracking-tight uppercase leading-none">{title}</h3>
+        <p className="text-slate-500 text-[10px] font-bold leading-tight opacity-70 truncate mt-1">{desc}</p>
+      </div>
+      <div className="text-slate-300 group-hover:text-slate-900 transition-colors">
+        <ChevronRight size={18} strokeWidth={3} />
+      </div>
     </div>
   );
 };
