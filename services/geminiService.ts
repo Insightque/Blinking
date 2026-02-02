@@ -14,14 +14,14 @@ export const generateWordSet = async (category: Category, topic: string): Promis
     systemInstruction = "You are an English sentence pattern coach. Focus on 'Subject + Verb' chunks. Korean translation MUST be in English word order (Subject / Verb / Object).";
   }
 
-  const prompt = `Generate a JSON array of 30 distinct English vocabulary/expressions for the topic: "${topic}".
+  const prompt = `Generate a JSON array of 50 distinct English vocabulary/expressions for the topic: "${topic}".
   Category context: ${category}.
   ${category === Category.SUBJECT_VERB ? "CRITICAL: The 'korean' field MUST be formatted with slashes(/) reflecting English order (e.g., '나는 / 간다 / 학교에')." : ""}
   Provide keys: "korean", "english", "partOfSpeech", "example".`;
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-2.5-flash-preview",
       contents: prompt,
       config: {
         systemInstruction,
