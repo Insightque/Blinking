@@ -1,3 +1,4 @@
+
 import { WordItem } from "../types";
 
 export const AI_SEED_DATA: Partial<WordItem>[] = [

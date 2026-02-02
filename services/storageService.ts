@@ -1,3 +1,4 @@
+
 import { Category, WordSet, WordItem } from "../types";
 import { OPIC_SEED_DATA } from "../data/opicData";
 import { AI_SEED_DATA } from "../data/aiData";
@@ -66,6 +67,38 @@ export const clearAllData = () => {
   localStorage.removeItem(SETS_KEY);
   localStorage.removeItem(COUNTS_KEY);
   window.location.reload();
+};
+
+export const exportBackup = () => {
+  const data = {
+    sets: getAllSets(),
+    counts: JSON.parse(localStorage.getItem(COUNTS_KEY) || '{}'),
+    exportedAt: new Date().toISOString()
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `lingofocus_backup_${new Date().toISOString().split('T')[0]}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+};
+
+export const importBackup = (jsonString: string): boolean => {
+  try {
+    const data = JSON.parse(jsonString);
+    if (data.sets && Array.isArray(data.sets)) {
+      localStorage.setItem(SETS_KEY, JSON.stringify(data.sets));
+      if (data.counts) {
+        localStorage.setItem(COUNTS_KEY, JSON.stringify(data.counts));
+      }
+      return true;
+    }
+    return false;
+  } catch (e) {
+    console.error("Import failed", e);
+    return false;
+  }
 };
 
 export const getSetsByCategory = (category: Category): WordSet[] => {

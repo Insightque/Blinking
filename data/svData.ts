@@ -1,3 +1,4 @@
+
 import { WordItem } from "../types";
 
 export const SV_SEED_DATA: Partial<WordItem>[] = [
