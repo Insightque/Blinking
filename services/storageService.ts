@@ -1,9 +1,10 @@
 
 import { Category, WordSet, WordItem } from "../types";
-import { OPIC_JSON, AI_JSON } from "../data/database";
-import { SUBJECT_VERB_JSON } from "../data/subjectVerbDatabase";
+import { OPIC_SEED_DATA } from "../data/opicData";
+import { AI_SEED_DATA } from "../data/aiData";
+import { SV_SEED_DATA } from "../data/svData";
 
-const SETS_KEY = 'lingofocus_word_sets_v2'; // Versioning key to reset data for new structure
+const SETS_KEY = 'lingofocus_word_sets_v3'; 
 const COUNTS_KEY = 'lingofocus_review_counts';
 
 const mapToWordItems = (raw: Partial<WordItem>[], prefix: string): WordItem[] => {
@@ -17,28 +18,27 @@ const mapToWordItems = (raw: Partial<WordItem>[], prefix: string): WordItem[] =>
   }));
 };
 
-// 초기 시드 데이터 생성
 const createSeedSets = (): WordSet[] => [
   {
-    id: 'seed-sv-1',
+    id: 'seed-sv-basic',
     category: Category.SUBJECT_VERB,
-    topic: 'S+V Basic Patterns (System)',
+    topic: 'Basic Sentence Patterns (System)',
     createdAt: new Date().toISOString(),
-    words: mapToWordItems(SUBJECT_VERB_JSON, 'sv-seed')
+    words: mapToWordItems(SV_SEED_DATA, 'sv-seed')
   },
   {
-    id: 'seed-opic-1',
+    id: 'seed-opic-basic',
     category: Category.OPIC,
-    topic: 'OPIc Essential (System)',
+    topic: 'OPIc Essential Phrases (System)',
     createdAt: new Date().toISOString(),
-    words: mapToWordItems(OPIC_JSON, 'opic-seed')
+    words: mapToWordItems(OPIC_SEED_DATA, 'opic-seed')
   },
   {
-    id: 'seed-ai-1',
+    id: 'seed-ai-basic',
     category: Category.AI_ENGINEERING,
-    topic: 'AI/Tech Essential (System)',
+    topic: 'AI/Tech Core Vocab (System)',
     createdAt: new Date().toISOString(),
-    words: mapToWordItems(AI_JSON, 'ai-seed')
+    words: mapToWordItems(AI_SEED_DATA, 'ai-seed')
   }
 ];
 
