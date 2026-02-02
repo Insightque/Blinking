@@ -39,6 +39,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // 파일 확장자 체크 (보안 및 편의성)
+    if (!file.name.toLowerCase().endsWith('.json') && file.type !== 'application/json') {
+      alert("JSON 파일만 불러올 수 있습니다.");
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+
     const reader = new FileReader();
     reader.onload = (event) => {
       const result = event.target?.result;
@@ -48,9 +55,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           alert("데이터를 성공적으로 불러왔습니다. 앱을 다시 시작합니다.");
           window.location.reload();
         } else {
-          alert("잘못된 파일 형식입니다.");
+          alert("파일 내용이 올바르지 않거나 손상되었습니다.");
         }
       }
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    };
+    reader.onerror = () => {
+      alert("파일을 읽는 중 오류가 발생했습니다.");
+      if (fileInputRef.current) fileInputRef.current.value = '';
     };
     reader.readAsText(file);
   };
@@ -147,9 +159,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 ref={fileInputRef} 
                 onChange={handleImport} 
                 className="hidden" 
-                accept=".json"
+                accept="application/json,.json"
               />
             </div>
+            <p className="text-[10px] text-slate-400 font-medium text-center">파일 탐색기에서 내보낸 .json 파일을 선택하세요.</p>
           </div>
 
           <div className="pt-4">
