@@ -1,4 +1,3 @@
-
 import { Category, WordSet, WordItem } from "../types";
 import { OPIC_SEED_DATA } from "../data/opicData";
 import { AI_SEED_DATA } from "../data/aiData";
@@ -61,6 +60,12 @@ export const saveNewSet = (newSet: WordSet) => {
 export const deleteSet = (setId: string) => {
   const sets = getAllSets().filter(s => s.id !== setId);
   localStorage.setItem(SETS_KEY, JSON.stringify(sets));
+};
+
+export const clearAllData = () => {
+  localStorage.removeItem(SETS_KEY);
+  localStorage.removeItem(COUNTS_KEY);
+  window.location.reload();
 };
 
 export const getSetsByCategory = (category: Category): WordSet[] => {

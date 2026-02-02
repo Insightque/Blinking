@@ -100,5 +100,17 @@ export const AI_SEED_DATA: Partial<WordItem>[] = [
   { korean: "기대값", english: "expected value", partOfSpeech: "noun", example: "The expected value of the distribution." },
   { korean: "상관 관계", english: "correlation", partOfSpeech: "noun", example: "There is a strong correlation between features." },
   { korean: "회귀", english: "regression", partOfSpeech: "noun", example: "Linear regression is a simple model." },
-  { korean: "분류", english: "classification", partOfSpeech: "noun", example: "This is a multi-class classification problem." }
+  { korean: "분류", english: "classification", partOfSpeech: "noun", example: "This is a multi-class classification problem." },
+  { korean: "하이퍼파라미터", english: "hyperparameter", partOfSpeech: "noun", example: "Hyperparameter tuning is vital." },
+  { korean: "그리드 탐색", english: "grid search", partOfSpeech: "noun", example: "We used grid search for tuning." },
+  { korean: "가상 환경", english: "virtual environment", partOfSpeech: "noun", example: "Create a separate virtual environment." },
+  { korean: "요구 사항", english: "requirements", partOfSpeech: "noun", example: "List all project requirements." },
+  { korean: "아키텍처", english: "architecture", partOfSpeech: "noun", example: "The software architecture is robust." },
+  { korean: "동기식", english: "synchronous", partOfSpeech: "adj", example: "The request is processed synchronously." },
+  { korean: "비동기식", english: "asynchronous", partOfSpeech: "adj", example: "Use async/await for better responsiveness." },
+  { korean: "엔드포인트", english: "endpoint", partOfSpeech: "noun", example: "The API endpoint returns JSON." },
+  { korean: "페이로드", english: "payload", partOfSpeech: "noun", example: "Check the request payload size." },
+  { korean: "인스턴스", english: "instance", partOfSpeech: "noun", example: "Launch a new EC2 instance." },
+  { korean: "프로비저닝", english: "provisioning", partOfSpeech: "noun", example: "Automate the provisioning process." },
+  { korean: "데이터 웨어하우스", english: "data warehouse", partOfSpeech: "noun", example: "The data warehouse stores historical info." }
 ];
