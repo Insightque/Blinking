@@ -1,17 +1,17 @@
 
 export enum AppMode {
   WELCOME = 'WELCOME',
+  SET_LIST = 'SET_LIST',
+  GENERATOR = 'GENERATOR',
   LOADING = 'LOADING',
   SESSION = 'SESSION',
-  SUMMARY = 'SUMMARY',
-  CUSTOM_INPUT = 'CUSTOM_INPUT'
+  SUMMARY = 'SUMMARY'
 }
 
 export enum Category {
   OPIC = 'OPIC',
   AI_ENGINEERING = 'AI_ENGINEERING',
-  SUBJECT_VERB = 'SUBJECT_VERB',
-  CUSTOM = 'CUSTOM'
+  SUBJECT_VERB = 'SUBJECT_VERB'
 }
 
 export interface WordItem {
@@ -21,6 +21,14 @@ export interface WordItem {
   partOfSpeech: string;
   example?: string;
   reviewCount: number;
+}
+
+export interface WordSet {
+  id: string;
+  category: Category;
+  topic: string;
+  createdAt: string;
+  words: WordItem[];
 }
 
 export interface SessionSettings {
