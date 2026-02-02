@@ -1,6 +1,7 @@
 
 import { Category, WordItem } from "../types";
 import { OPIC_DATABASE, AI_DATABASE } from "../data/database";
+import { SUBJECT_VERB_DATABASE } from "../data/subjectVerbDatabase";
 import { getStoredReviewCount } from "./storageService";
 
 export const getWordsFromDatabase = async (category: Category, count: number, customData?: WordItem[]): Promise<WordItem[]> => {
@@ -8,6 +9,8 @@ export const getWordsFromDatabase = async (category: Category, count: number, cu
   
   if (category === Category.CUSTOM && customData) {
     sourceData = customData;
+  } else if (category === Category.SUBJECT_VERB) {
+    sourceData = SUBJECT_VERB_DATABASE;
   } else {
     sourceData = category === Category.OPIC ? OPIC_DATABASE : AI_DATABASE;
   }

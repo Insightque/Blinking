@@ -10,6 +10,7 @@ export enum AppMode {
 export enum Category {
   OPIC = 'OPIC',
   AI_ENGINEERING = 'AI_ENGINEERING',
+  SUBJECT_VERB = 'SUBJECT_VERB',
   CUSTOM = 'CUSTOM'
 }
 

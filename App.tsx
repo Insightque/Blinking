@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Settings, Play, Pause, BookOpen, Brain, ChevronRight, ChevronLeft, CheckCircle2, Home, Clock, Plus, Minus, Repeat, Sparkles, Copy, ClipboardCheck, Volume2 } from 'lucide-react';
+import { Settings, Play, Pause, BookOpen, Brain, ChevronRight, ChevronLeft, CheckCircle2, Home, Clock, Plus, Minus, Repeat, Sparkles, Copy, ClipboardCheck, Volume2, Languages } from 'lucide-react';
 import { AppMode, Category, SessionSettings, WordItem } from './types';
 import { getWordsFromDatabase } from './services/wordService';
 import { incrementReviewCount } from './services/storageService';
@@ -149,8 +149,14 @@ Example: [{"korean":"...","english":"...","partOfSpeech":"...","example":"..."}]
             <p className="text-slate-400 text-sm font-semibold tracking-tight">Professional Vocabulary Trainer</p>
           </div>
 
-          {/* 슬림 세로 배치 메뉴 (리스트 스타일) */}
           <div className="flex flex-col gap-3 w-full">
+            <HomeCard 
+              icon={<Languages size={18} />} 
+              title="S+V Pattern Mastery" 
+              desc="English word order training"
+              color="indigo"
+              onClick={() => handleStartSession(Category.SUBJECT_VERB)}
+            />
             <HomeCard 
               icon={<BookOpen size={18} />} 
               title="OPIc Mastery" 
@@ -169,7 +175,7 @@ Example: [{"korean":"...","english":"...","partOfSpeech":"...","example":"..."}]
               icon={<Sparkles size={18} />} 
               title="AI Custom Session" 
               desc="Gemini-generated topic"
-              color="indigo"
+              color="slate"
               onClick={() => setMode(AppMode.CUSTOM_INPUT)}
             />
           </div>
@@ -203,7 +209,6 @@ Example: [{"korean":"...","english":"...","partOfSpeech":"...","example":"..."}]
           </header>
 
           <div className="grid md:grid-cols-2 gap-8 items-start">
-            {/* Step 1: Prompt Generation */}
             <section className="space-y-4">
               <div className="bg-indigo-600 rounded-3xl p-6 text-white space-y-6 shadow-xl relative overflow-hidden">
                 <div className="relative z-10 space-y-4">
@@ -243,31 +248,20 @@ Example: [{"korean":"...","english":"...","partOfSpeech":"...","example":"..."}]
                   </Button>
                 </div>
               </div>
-              <p className="text-[11px] text-slate-400 font-medium px-2 leading-relaxed italic">
-                * 위 버튼을 눌러 복사한 뒤, Gemini(AI)에 붙여넣고 생성된 JSON을 아래에 붙여주세요.
-              </p>
             </section>
 
-            {/* Step 2: JSON Input */}
             <section className="space-y-4">
               <h3 className="font-bold text-slate-800 text-sm flex items-center gap-2">
                 <div className="w-6 h-6 bg-slate-900 rounded-full flex items-center justify-center text-white text-[11px] font-black">2</div> 
                 PASTE AI RESULT
               </h3>
-              <div className="relative group">
-                <textarea 
-                  value={customInput}
-                  onChange={(e) => setCustomInput(e.target.value)}
-                  placeholder="[ { 'korean': '...', 'english': '...', ... } ]"
-                  className="w-full min-h-[300px] md:h-[350px] p-6 bg-slate-50 border-2 border-slate-100 rounded-3xl focus:border-indigo-500 focus:bg-white outline-none font-mono text-[11px] transition-all shadow-inner resize-none"
-                />
-              </div>
-              <Button 
-                fullWidth 
-                onClick={handleCustomSubmit} 
-                disabled={!customInput.trim()} 
-                className="py-5 shadow-indigo-200 shadow-2xl text-lg rounded-2xl"
-              >
+              <textarea 
+                value={customInput}
+                onChange={(e) => setCustomInput(e.target.value)}
+                placeholder="[ { 'korean': '...', 'english': '...', ... } ]"
+                className="w-full min-h-[300px] md:h-[350px] p-6 bg-slate-50 border-2 border-slate-100 rounded-3xl focus:border-indigo-500 focus:bg-white outline-none font-mono text-[11px] transition-all shadow-inner resize-none"
+              />
+              <Button fullWidth onClick={handleCustomSubmit} disabled={!customInput.trim()} className="py-5 shadow-indigo-200 shadow-2xl text-lg rounded-2xl">
                 학습 시작하기
               </Button>
             </section>
@@ -300,6 +294,23 @@ Example: [{"korean":"...","english":"...","partOfSpeech":"...","example":"..."}]
   const currentWord = words[currentIndex];
   const progress = words.length > 0 ? ((currentIndex + 1) / words.length) * 100 : 0;
 
+  // 영어식 어순 포맷팅 로직
+  const renderKorean = (text: string) => {
+    if (settings.category === Category.SUBJECT_VERB && text.includes('/')) {
+      return (
+        <div className="flex flex-wrap justify-center gap-2 md:gap-4">
+          {text.split('/').map((part, i) => (
+            <span key={i} className="relative group">
+              <span className="text-slate-900">{part.trim()}</span>
+              {i < text.split('/').length - 1 && <span className="text-slate-200 mx-1">/</span>}
+            </span>
+          ))}
+        </div>
+      );
+    }
+    return text;
+  };
+
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col select-none overflow-hidden">
       <header className="bg-white border-b border-slate-200 px-6 py-3 flex items-center justify-between sticky top-0 z-20">
@@ -330,20 +341,24 @@ Example: [{"korean":"...","english":"...","partOfSpeech":"...","example":"..."}]
             </div>
 
             <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
-              <div className="space-y-4 mb-10">
-                <span className="text-slate-300 text-[10px] font-black uppercase tracking-widest">Definition</span>
-                <h2 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tight leading-tight">{currentWord?.korean}</h2>
+              <div className="space-y-4 mb-10 w-full">
+                <span className="text-slate-300 text-[10px] font-black uppercase tracking-widest">
+                  {settings.category === Category.SUBJECT_VERB ? "Think in English Order" : "Definition"}
+                </span>
+                <div className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight leading-tight">
+                  {renderKorean(currentWord?.korean || "")}
+                </div>
               </div>
 
               {isEnglishRevealed ? (
                 <div className="space-y-6 animate-in fade-in zoom-in duration-500">
                   <div className="w-16 h-1 bg-indigo-600 mx-auto rounded-full"></div>
                   <div className="space-y-2">
-                    <span className="text-indigo-400 text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-1.5"><Volume2 size={12} /> Word</span>
-                    <h3 className="text-3xl md:text-4xl font-black text-indigo-600 tracking-tight">{currentWord?.english}</h3>
+                    <span className="text-indigo-400 text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-1.5"><Volume2 size={12} /> Expression</span>
+                    <h3 className="text-2xl md:text-3xl font-black text-indigo-600 tracking-tight">{currentWord?.english}</h3>
                   </div>
                   {currentWord?.example && (
-                    <div className="bg-indigo-50/50 p-4 rounded-2xl border border-indigo-100/50 max-w-xs mx-auto">
+                    <div className="bg-indigo-50/50 p-4 rounded-2xl border border-indigo-100/50 max-w-sm mx-auto">
                       <p className="text-slate-700 text-xs font-medium italic">"{currentWord.example}"</p>
                     </div>
                   )}
@@ -401,7 +416,8 @@ const HomeCard = ({ icon, title, desc, color, onClick }: any) => {
   const themes: any = {
     orange: "bg-orange-50 text-orange-600 border-orange-100 hover:border-orange-500 hover:bg-orange-100 shadow-orange-100/20",
     blue: "bg-blue-50 text-blue-600 border-blue-100 hover:border-blue-500 hover:bg-blue-100 shadow-blue-100/20",
-    indigo: "bg-indigo-50 text-indigo-600 border-indigo-100 hover:border-indigo-500 hover:bg-indigo-100 shadow-indigo-100/20"
+    indigo: "bg-indigo-50 text-indigo-600 border-indigo-100 hover:border-indigo-500 hover:bg-indigo-100 shadow-indigo-100/20",
+    slate: "bg-slate-50 text-slate-600 border-slate-100 hover:border-slate-500 hover:bg-slate-100 shadow-slate-100/20"
   };
   return (
     <div onClick={onClick} className={`group cursor-pointer p-4 rounded-2xl shadow-sm transition-all border-2 flex items-center text-left gap-4 w-full ${themes[color]} transform active:scale-[0.98]`}>
