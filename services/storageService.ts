@@ -1,33 +1,44 @@
 
-import { Category, WordSet } from "../types";
-import { OPIC_DATABASE, AI_DATABASE } from "../data/database";
-import { SUBJECT_VERB_DATABASE } from "../data/subjectVerbDatabase";
+import { Category, WordSet, WordItem } from "../types";
+import { OPIC_JSON, AI_JSON } from "../data/database";
+import { SUBJECT_VERB_JSON } from "../data/subjectVerbDatabase";
 
-const SETS_KEY = 'lingofocus_word_sets';
+const SETS_KEY = 'lingofocus_word_sets_v2'; // Versioning key to reset data for new structure
 const COUNTS_KEY = 'lingofocus_review_counts';
+
+const mapToWordItems = (raw: Partial<WordItem>[], prefix: string): WordItem[] => {
+  return raw.map((item, idx) => ({
+    id: `${prefix}-${idx}`,
+    korean: item.korean || '',
+    english: item.english || '',
+    partOfSpeech: item.partOfSpeech || '',
+    example: item.example || '',
+    reviewCount: 0
+  }));
+};
 
 // 초기 시드 데이터 생성
 const createSeedSets = (): WordSet[] => [
   {
+    id: 'seed-sv-1',
+    category: Category.SUBJECT_VERB,
+    topic: 'S+V Basic Patterns (System)',
+    createdAt: new Date().toISOString(),
+    words: mapToWordItems(SUBJECT_VERB_JSON, 'sv-seed')
+  },
+  {
     id: 'seed-opic-1',
     category: Category.OPIC,
-    topic: 'OPIc Essential (Default)',
+    topic: 'OPIc Essential (System)',
     createdAt: new Date().toISOString(),
-    words: OPIC_DATABASE
+    words: mapToWordItems(OPIC_JSON, 'opic-seed')
   },
   {
     id: 'seed-ai-1',
     category: Category.AI_ENGINEERING,
-    topic: 'AI/Tech Essential (Default)',
+    topic: 'AI/Tech Essential (System)',
     createdAt: new Date().toISOString(),
-    words: AI_DATABASE
-  },
-  {
-    id: 'seed-sv-1',
-    category: Category.SUBJECT_VERB,
-    topic: 'S+V Basic Patterns (Default)',
-    createdAt: new Date().toISOString(),
-    words: SUBJECT_VERB_DATABASE
+    words: mapToWordItems(AI_JSON, 'ai-seed')
   }
 ];
 

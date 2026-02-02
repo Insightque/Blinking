@@ -41,13 +41,13 @@ const App: React.FC = () => {
 
   const handleStartSession = (set: WordSet) => {
     setSelectedSet(set);
-    // Shuffle and inject review counts
+    // Prepare words: inject review counts
     const preparedWords = [...set.words].map(w => ({
       ...w,
       reviewCount: getStoredReviewCount(w.id)
     }));
     
-    // Simple shuffle
+    // Shuffle
     for (let i = preparedWords.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [preparedWords[i], preparedWords[j]] = [preparedWords[j], preparedWords[i]];
@@ -137,9 +137,12 @@ const App: React.FC = () => {
   const renderKorean = (text: string) => {
     if (selectedSet?.category === Category.SUBJECT_VERB && text.includes('/')) {
       return (
-        <div className="flex flex-wrap justify-center gap-2">
-          {text.split('/').map((part, i) => (
-            <span key={i} className="text-slate-900">{part.trim()}{i < text.split('/').length - 1 && <span className="text-slate-300 ml-2">/</span>}</span>
+        <div className="flex flex-wrap justify-center items-center gap-x-2 gap-y-1">
+          {text.split('/').map((part, i, arr) => (
+            <React.Fragment key={i}>
+              <span className="text-slate-900 font-black">{part.trim()}</span>
+              {i < arr.length - 1 && <span className="text-indigo-200 font-light">/</span>}
+            </React.Fragment>
           ))}
         </div>
       );
@@ -169,26 +172,26 @@ const App: React.FC = () => {
             <HomeCard 
               icon={<Languages size={18} />} 
               title="S+V Pattern" 
-              desc={`${counts[Category.SUBJECT_VERB]} words in DB`}
+              desc={`${counts[Category.SUBJECT_VERB]} expressions total`}
               color="indigo"
               onClick={() => loadCategorySets(Category.SUBJECT_VERB)}
             />
             <HomeCard 
               icon={<BookOpen size={18} />} 
               title="OPIc Training" 
-              desc={`${counts[Category.OPIC]} words in DB`}
+              desc={`${counts[Category.OPIC]} expressions total`}
               color="orange"
               onClick={() => loadCategorySets(Category.OPIC)}
             />
             <HomeCard 
               icon={<Brain size={18} />} 
               title="AI Tech Vocab" 
-              desc={`${counts[Category.AI_ENGINEERING]} words in DB`}
+              desc={`${counts[Category.AI_ENGINEERING]} expressions total`}
               color="blue"
               onClick={() => loadCategorySets(Category.AI_ENGINEERING)}
             />
-            <Button onClick={() => setMode(AppMode.GENERATOR)} variant="secondary" className="flex items-center justify-center gap-2 py-4 rounded-2xl border-dashed border-2 bg-transparent text-indigo-600 border-indigo-200 hover:border-indigo-600">
-              <PlusCircle size={20} /> Create New 학습 세트 (AI)
+            <Button onClick={() => setMode(AppMode.GENERATOR)} variant="secondary" className="flex items-center justify-center gap-2 py-4 rounded-2xl border-dashed border-2 bg-transparent text-indigo-600 border-indigo-200 hover:border-indigo-600 mt-2">
+              <PlusCircle size={20} /> Create Custom Set (AI)
             </Button>
           </div>
 
@@ -209,7 +212,7 @@ const App: React.FC = () => {
             <button onClick={() => setMode(AppMode.WELCOME)} className="flex items-center gap-2 text-slate-400 hover:text-slate-800 font-black uppercase text-xs">
               <ChevronLeft size={18} /> Back
             </button>
-            <h2 className="text-xl font-black text-slate-900 uppercase tracking-tighter">{activeCategory} Database</h2>
+            <h2 className="text-xl font-black text-slate-900 uppercase tracking-tighter">{activeCategory} Collections</h2>
           </header>
 
           <div className="grid gap-4">
@@ -223,12 +226,12 @@ const App: React.FC = () => {
                       <h4 className="text-base font-black text-slate-800 leading-tight">{set.topic}</h4>
                       <div className="flex items-center gap-3 mt-1 text-[10px] text-slate-400 font-bold uppercase tracking-wide">
                         <span className="flex items-center gap-1"><Calendar size={10} /> {new Date(set.createdAt).toLocaleDateString()}</span>
-                        <span className="flex items-center gap-1"><PlusCircle size={10} /> {set.words.length} Words</span>
+                        <span className="flex items-center gap-1"><PlusCircle size={10} /> {set.words.length} Items</span>
                       </div>
                    </div>
                 </div>
                 <div className="flex items-center gap-2">
-                   <Button onClick={() => handleStartSession(set)} variant="primary" className="py-2 px-4 text-xs font-black">START</Button>
+                   <Button onClick={() => handleStartSession(set)} variant="primary" className="py-2 px-4 text-xs font-black">STUDY</Button>
                    {!set.id.startsWith('seed') && (
                      <button onClick={() => { deleteSet(set.id); setAvailableSets(prev => prev.filter(s => s.id !== set.id)); }} className="p-2 text-slate-300 hover:text-red-500 transition-colors">
                        <Trash2 size={18} />
@@ -237,6 +240,11 @@ const App: React.FC = () => {
                 </div>
               </div>
             ))}
+            {availableSets.length === 0 && (
+              <div className="text-center py-12 text-slate-400 font-bold uppercase tracking-widest border-2 border-dashed border-slate-100 rounded-3xl">
+                No custom sets yet
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -252,14 +260,14 @@ const App: React.FC = () => {
                <Sparkles size={32} />
              </div>
              <h2 className="text-3xl font-black text-slate-900 tracking-tighter">AI Set Generator</h2>
-             <p className="text-slate-400 text-sm font-medium">Gemini will build a custom JSON database for you.</p>
+             <p className="text-slate-400 text-sm font-medium">Create specialized JSON datasets on any topic.</p>
            </header>
 
            <div className="space-y-6">
              <div className="space-y-3">
-               <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Target Category</label>
+               <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Target Type</label>
                <div className="grid grid-cols-3 gap-2">
-                 {[Category.OPIC, Category.AI_ENGINEERING, Category.SUBJECT_VERB].map(cat => (
+                 {[Category.SUBJECT_VERB, Category.OPIC, Category.AI_ENGINEERING].map(cat => (
                    <button 
                      key={cat}
                      onClick={() => setGenCategory(cat)}
@@ -272,19 +280,19 @@ const App: React.FC = () => {
              </div>
 
              <div className="space-y-3">
-               <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">What do you want to learn?</label>
+               <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Specify Topic</label>
                <input 
                  type="text"
                  value={genTopic}
                  onChange={(e) => setGenTopic(e.target.value)}
-                 placeholder="e.g. Hiking, Coffee, Cloud Infrastructure..."
+                 placeholder="e.g. Daily routines, Server maintenance, ML papers..."
                  className="w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-indigo-500 focus:bg-white outline-none transition-all font-bold"
                />
              </div>
 
              <div className="flex gap-3">
                <Button onClick={() => setMode(AppMode.WELCOME)} variant="secondary" className="flex-1 py-4">Cancel</Button>
-               <Button onClick={handleGenerate} disabled={!genTopic.trim()} className="flex-[2] py-4 shadow-indigo-200 shadow-xl">Generate DB &rarr;</Button>
+               <Button onClick={handleGenerate} disabled={!genTopic.trim()} className="flex-[2] py-4 shadow-indigo-200 shadow-xl">Start AI Generation &rarr;</Button>
              </div>
            </div>
         </div>
@@ -295,7 +303,7 @@ const App: React.FC = () => {
   if (mode === AppMode.LOADING) return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50">
       <div className="w-16 h-16 border-8 border-indigo-100 border-t-indigo-600 rounded-full animate-spin mb-6"></div>
-      <h2 className="text-lg font-black text-slate-800 tracking-widest uppercase animate-pulse">AI is crafting your database...</h2>
+      <h2 className="text-lg font-black text-slate-800 tracking-widest uppercase animate-pulse">Building your custom JSON...</h2>
     </div>
   );
 
@@ -304,12 +312,12 @@ const App: React.FC = () => {
       <div className="bg-white p-10 rounded-[3rem] shadow-2xl max-w-sm w-full text-center space-y-6">
         <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto text-green-600"><CheckCircle2 size={40} /></div>
         <div className="space-y-1">
-           <h2 className="text-3xl font-black text-slate-900 tracking-tight">MISSION COMPLETE</h2>
-           <p className="text-slate-400 text-sm font-bold uppercase tracking-wide">You mastered {words.length} expressions</p>
+           <h2 className="text-3xl font-black text-slate-900 tracking-tight">FINISHED</h2>
+           <p className="text-slate-400 text-sm font-bold uppercase tracking-wide">Set: {selectedSet?.topic}</p>
         </div>
         <div className="flex flex-col gap-3 pt-4">
-          <Button onClick={() => handleStartSession(selectedSet!)} className="py-5 text-lg">RESTART SET</Button>
-          <Button variant="secondary" onClick={() => setMode(AppMode.WELCOME)} className="py-5 text-lg">BACK TO MENU</Button>
+          <Button onClick={() => handleStartSession(selectedSet!)} className="py-5 text-lg">RESTART SESSION</Button>
+          <Button variant="secondary" onClick={() => setMode(AppMode.SET_LIST)} className="py-5 text-lg">COLLECTION LIST</Button>
         </div>
       </div>
     </div>
@@ -323,12 +331,12 @@ const App: React.FC = () => {
       <header className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between sticky top-0 z-20">
         <button onClick={() => setMode(AppMode.WELCOME)} className="flex items-center gap-3 group">
           <div className="w-8 h-8 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-black text-sm">LF</div>
-          <div className="text-left">
+          <div className="text-left hidden md:block">
              <span className="font-black text-lg text-slate-800 tracking-tighter block leading-none">LingoFocus</span>
-             <span className="text-[9px] text-slate-400 font-black uppercase tracking-widest">{selectedSet?.topic}</span>
+             <span className="text-[9px] text-slate-400 font-black uppercase tracking-widest truncate max-w-[150px]">{selectedSet?.topic}</span>
           </div>
         </button>
-        <div className="flex-1 max-w-md mx-6">
+        <div className="flex-1 max-w-md mx-4 md:mx-6">
           <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
             <div className="h-full bg-indigo-600 transition-all duration-700 ease-out" style={{ width: `${progress}%` }} />
           </div>
@@ -348,10 +356,10 @@ const App: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex-1 flex flex-col items-center justify-center p-10 text-center">
+            <div className="flex-1 flex flex-col items-center justify-center p-8 md:p-10 text-center">
               <div className="space-y-6 mb-12 w-full">
                 <span className="text-slate-300 text-xs font-black uppercase tracking-widest">
-                  {selectedSet?.category === Category.SUBJECT_VERB ? "Think in English Order" : "Concept"}
+                  {selectedSet?.category === Category.SUBJECT_VERB ? "Think in English order" : "Definition"}
                 </span>
                 <div className="text-3xl md:text-5xl font-black text-slate-900 tracking-tight leading-tight">
                   {renderKorean(currentWord?.korean || "")}
