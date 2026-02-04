@@ -37,6 +37,10 @@ export const SessionView: React.FC<SessionViewProps> = ({
   const clearTimers = useCallback(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
     if (tickIntervalRef.current) clearInterval(tickIntervalRef.current);
+    // TTS 중단
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
   }, []);
 
   const handleNextWord = useCallback(() => {
@@ -58,12 +62,12 @@ export const SessionView: React.FC<SessionViewProps> = ({
     }
   }, [currentIndex]);
 
-  const handleExit = () => {
+  const handleExit = useCallback(() => {
     if (confirm("학습을 종료하고 목록으로 돌아가시겠습니까?")) {
       clearTimers();
       onExit();
     }
-  };
+  }, [clearTimers, onExit]);
 
   useEffect(() => {
     clearTimers();
@@ -177,6 +181,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 sm:gap-5 bg-white p-2 sm:p-3 rounded-xl sm:rounded-2xl shadow-sm border">
                   <button 
+                    type="button"
                     onClick={() => onUpdateSettings({...settings, autoAdvanceDelay: Math.max(1, settings.autoAdvanceDelay - 1)})} 
                     className="p-1.5 sm:p-2.5 hover:bg-slate-50 rounded-lg sm:rounded-xl text-slate-400 transition-colors"
                   >
@@ -184,6 +189,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
                   </button>
                   <span className="text-base sm:text-xl font-black text-slate-800 min-w-[2rem] sm:min-w-[3rem] text-center tabular-nums">{settings.autoAdvanceDelay}s</span>
                   <button 
+                    type="button"
                     onClick={() => onUpdateSettings({...settings, autoAdvanceDelay: Math.min(10, settings.autoAdvanceDelay + 1)})} 
                     className="p-1.5 sm:p-2.5 hover:bg-slate-50 rounded-lg sm:rounded-xl text-slate-400 transition-colors"
                   >
@@ -199,13 +205,13 @@ export const SessionView: React.FC<SessionViewProps> = ({
               </div>
               
               <div className="flex items-center justify-between gap-3 sm:gap-6">
-                <Button onClick={handlePreviousWord} disabled={currentIndex === 0} variant="secondary" className="px-4 sm:px-10 py-4 sm:py-5 rounded-[1.5rem] sm:rounded-[2rem]">
+                <Button type="button" onClick={handlePreviousWord} disabled={currentIndex === 0} variant="secondary" className="px-4 sm:px-10 py-4 sm:py-5 rounded-[1.5rem] sm:rounded-[2rem]">
                   <ChevronLeft size={24} className="sm:size-[32px]" />
                 </Button>
-                <Button onClick={() => setIsPaused(!isPaused)} variant={isPaused ? "primary" : "outline"} className="flex-1 flex items-center justify-center gap-2 sm:gap-4 py-4 sm:py-5 rounded-[1.5rem] sm:rounded-[2rem] text-xs sm:text-base font-black uppercase tracking-tight sm:tracking-[0.2em] shadow-lg">
+                <Button type="button" onClick={() => setIsPaused(!isPaused)} variant={isPaused ? "primary" : "outline"} className="flex-1 flex items-center justify-center gap-2 sm:gap-4 py-4 sm:py-5 rounded-[1.5rem] sm:rounded-[2rem] text-xs sm:text-base font-black uppercase tracking-tight sm:tracking-[0.2em] shadow-lg">
                   {isPaused ? <><Play size={20} className="sm:size-[28px]" fill="currentColor" /> Resume</> : <><Pause size={20} className="sm:size-[28px]" fill="currentColor" /> Pause</>}
                 </Button>
-                <Button onClick={handleNextWord} className="px-4 sm:px-10 py-4 sm:py-5 rounded-[1.5rem] sm:rounded-[2rem]">
+                <Button type="button" onClick={handleNextWord} className="px-4 sm:px-10 py-4 sm:py-5 rounded-[1.5rem] sm:rounded-[2rem]">
                   <ChevronRight size={24} className="sm:size-[32px]" />
                 </Button>
               </div>

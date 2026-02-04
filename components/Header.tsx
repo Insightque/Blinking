@@ -23,8 +23,12 @@ export const Header: React.FC<HeaderProps> = ({
     <header className="bg-white border-b border-slate-200 px-6 py-5 flex items-center justify-between sticky top-0 z-20">
       <div className="flex items-center gap-4">
         <button 
-          onClick={onExit} 
-          className="p-3 bg-slate-100 hover:bg-slate-200 rounded-2xl text-slate-600 transition-all"
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            onExit();
+          }} 
+          className="p-3 bg-slate-100 hover:bg-slate-200 rounded-2xl text-slate-600 transition-all active:scale-90"
           title="Exit Session"
         >
           <X size={20} strokeWidth={3} />
@@ -41,8 +45,9 @@ export const Header: React.FC<HeaderProps> = ({
         <p className="text-[11px] text-center text-slate-400 mt-2 font-black uppercase tracking-widest">{currentIndex + 1} / {total}</p>
       </div>
       <button 
+        type="button"
         onClick={onOpenSettings} 
-        className="p-3 hover:bg-slate-50 rounded-2xl text-slate-500 transition-all"
+        className="p-3 hover:bg-slate-50 rounded-2xl text-slate-500 transition-all active:scale-90"
       >
         <Settings size={22} />
       </button>
