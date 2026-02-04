@@ -7,7 +7,7 @@ export const generateWordSet = async (category: Category, topic: string): Promis
   
   let systemInstruction = "";
   if (category === Category.OPIC) {
-    systemInstruction = "You are an expert OPIc English coach. Generate high-frequency, natural conversational expressions for AL level. Focus on idiomatic expressions.";
+    systemInstruction = "You are an expert OPIc English coach. Generate high-frequency, natural conversational expressions strictly for IH (Intermediate High) level. Focus on clear, idiomatic expressions that are practical for speaking tests.";
   } else {
     systemInstruction = "You are an English syntax specialist. You create short 'Subject + Verb' pattern chunks (e.g., 'I've decided to', 'She is planning on'). Your goal is to help students practice the core 'Subject + Verb' structure. The Korean translation MUST use slashes (/) to match the English word order exactly.";
   }
@@ -22,7 +22,7 @@ export const generateWordSet = async (category: Category, topic: string): Promis
        Example: English: "I'm planning to", Korean: "나는 / 계획 중이다"
     3. The 'partOfSpeech' MUST be "pattern".` 
     : 
-    `Include a realistic professional example sentence.`
+    `Include a realistic professional example sentence for each item.`
   }
   
   Return ONLY the JSON array.`;
@@ -72,8 +72,18 @@ export const generateWordSet = async (category: Category, topic: string): Promis
 
 export const generateSentenceSet = async (wordSet: WordSet): Promise<SentenceSet> => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-  const systemInstruction = `You are a professional OPIc trainer. Create 10 natural OPIc responses (AL level) with fillers (Well, Actually, You know).`;
-  const prompt = `Topic "${wordSet.topic}". Generate 10 expressive OPIc answer sentences in JSON array.`;
+  
+  // 학습 세트 내의 핵심 표현들을 추출하여 프롬프트에 포함
+  const expressions = wordSet.words.map(w => w.english).slice(0, 15).join(", ");
+  
+  const systemInstruction = `You are a professional OPIc trainer. Create 10 natural OPIc responses strictly at IH (Intermediate High) level. 
+  The responses should be conversational, enthusiastic, and clear, using common fillers like 'You know', 'I mean', 'Well', and 'Let me see'. 
+  Focus on structures that demonstrate a high level of fluency without being overly academic.`;
+  
+  const prompt = `Topic: "${wordSet.topic}". 
+  Please create 10 expressive OPIc answer sentences in a JSON array. 
+  CRITICAL: You MUST naturally incorporate some of these expressions from the current study set: [${expressions}].
+  Each sentence should sound like a real person answering Eva in a conversational way.`;
 
   try {
     const response = await ai.models.generateContent({
@@ -86,7 +96,10 @@ export const generateSentenceSet = async (wordSet: WordSet): Promise<SentenceSet
           type: Type.ARRAY,
           items: {
             type: Type.OBJECT,
-            properties: { korean: { type: Type.STRING }, english: { type: Type.STRING } },
+            properties: { 
+              korean: { type: Type.STRING }, 
+              english: { type: Type.STRING } 
+            },
             required: ["korean", "english"]
           }
         }
@@ -102,9 +115,12 @@ export const generateSentenceSet = async (wordSet: WordSet): Promise<SentenceSet
       sentences: sentenceData.map((s: any, idx: number) => ({
         id: `sent-${Date.now()}-${idx}`,
         ...s,
-        partOfSpeech: 'OPIc Response',
+        partOfSpeech: 'OPIc IH Response',
         reviewCount: 0
       }))
     };
-  } catch (error) { throw error; }
+  } catch (error) { 
+    console.error("Gemini Sentence Generation Error:", error);
+    throw error; 
+  }
 };
