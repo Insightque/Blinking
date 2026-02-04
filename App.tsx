@@ -186,8 +186,6 @@ const App: React.FC = () => {
     if (confirm("이 문장 연습 세트를 삭제하시겠습니까?")) {
       deleteSentenceSet(id);
       playSound('pop');
-      // 리스트 갱신을 위해 picker를 닫았다가 다시 여는 효과를 주거나 상태를 관리해야 함
-      // 여기서는 Picker 내부에서 렌더링 시 direct call 하므로 별도 상태 갱신은 localStorage 기반 리렌더링 유도
     }
   };
 
@@ -475,7 +473,7 @@ const App: React.FC = () => {
             <div className="flex-1 flex flex-col items-center justify-center p-10 md:p-14 text-center">
               <div className="space-y-8 mb-16 w-full">
                 <span className="text-slate-300 text-xs font-black uppercase tracking-[0.3em]">
-                  {currentWord?.partOfSpeech === 'sentence' || currentWord?.partOfSpeech === 'OPIc Response' ? "Memorize Answer Response" : "Recall Meaning"}
+                  {currentWord?.partOfSpeech === 'sentence' || currentWord?.partOfSpeech === 'OPIc Response' || currentWord?.partOfSpeech === 'pattern' ? "Memorize Response Pattern" : "Recall Meaning"}
                 </span>
                 <div className={`font-black text-slate-900 tracking-tight leading-tight ${currentWord?.korean.length > 50 ? 'text-xl md:text-2xl' : 'text-3xl md:text-5xl'}`}>
                   {renderKorean(currentWord?.korean || "")}
@@ -491,7 +489,7 @@ const App: React.FC = () => {
                       {currentWord?.english}
                     </h3>
                   </div>
-                  {currentWord?.example && !['sentence', 'OPIc Response'].includes(currentWord.partOfSpeech) && (
+                  {currentWord?.example && !['sentence', 'OPIc Response', 'pattern'].includes(currentWord.partOfSpeech) && (
                     <div className="bg-slate-50/80 p-8 rounded-[2.5rem] border border-slate-100 max-w-md mx-auto shadow-inner">
                       <p className="text-slate-600 text-base font-medium italic leading-relaxed">"{currentWord.example}"</p>
                     </div>

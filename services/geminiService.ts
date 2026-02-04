@@ -11,13 +11,23 @@ export const generateWordSet = async (category: Category, topic: string): Promis
   } else if (category === Category.AI_ENGINEERING) {
     systemInstruction = "You are a senior AI research engineer. Generate professional technical terminology and industry-standard jargon used in state-of-the-art AI papers, system architecture meetings, and engineering documentations.";
   } else {
-    systemInstruction = "You are a syntax expert specializing in English sentence patterns. Focus on the 'Subject + Verb' chunking method to help learners build intuition for English word order. The Korean translation MUST reflect English word order using slashes(/).";
+    // SUBJECT_VERB 전문 지침
+    systemInstruction = "You are an English syntax expert specializing in the 'Subject + Verb' chunking method. Your goal is to help learners internalize English word order. You create patterns that start with a clear Subject and Verb chunk.";
   }
 
-  const prompt = `Generate a JSON array of 50 distinct English vocabulary items or expressions for the specific topic: "${topic}".
-  Category context: ${category}.
-  ${category === Category.SUBJECT_VERB ? "CRITICAL: The 'korean' field MUST be formatted with slashes(/) reflecting English word order (e.g., '나는 / 간다 / 학교에')." : ""}
-  Include a realistic professional example sentence for each item.
+  const prompt = `Generate a JSON array of 50 distinct English training items for the topic: "${topic}".
+  Category: ${category}.
+
+  ${category === Category.SUBJECT_VERB ? 
+    `CRITICAL RULES for Subject+Verb category:
+    1. Each item must be a short sentence or clause starting with a clear Subject and Verb.
+    2. The 'korean' field MUST use slashes (/) to mirror the English word order.
+       Example: English: "I'd like to describe my room", Korean: "나는 / 묘사하고 싶다 / 나의 방을"
+    3. The 'partOfSpeech' field should be "pattern".` 
+    : 
+    `Include a realistic professional example sentence for each item.`
+  }
+  
   Return ONLY the JSON array.`;
 
   try {
