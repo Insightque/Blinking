@@ -31,6 +31,14 @@ export interface WordSet {
   words: WordItem[];
 }
 
+export interface SentenceSet {
+  id: string;
+  wordSetId: string;
+  topic: string;
+  createdAt: string;
+  sentences: WordItem[]; // Reuse WordItem structure for sentences
+}
+
 export interface SessionSettings {
   category: Category;
   revealDelay: number;

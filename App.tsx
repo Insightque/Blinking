@@ -1,10 +1,10 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Settings, Play, Pause, BookOpen, Brain, ChevronRight, ChevronLeft, CheckCircle2, Home, Clock, Plus, Minus, Repeat, Sparkles, Copy, ClipboardCheck, Volume2, Languages, PlusCircle, Trash2, Calendar, Database } from 'lucide-react';
-import { AppMode, Category, SessionSettings, WordItem, WordSet } from './types';
-import { getAllSets, getSetsByCategory, saveNewSet, deleteSet, incrementReviewCount, getStoredReviewCount } from './services/storageService';
+import { Settings, Play, Pause, BookOpen, Brain, ChevronRight, ChevronLeft, CheckCircle2, Home, Clock, Plus, Minus, Repeat, Sparkles, Copy, ClipboardCheck, Volume2, Languages, PlusCircle, Trash2, Calendar, Database, MessageSquare, ListMusic, X, Quote } from 'lucide-react';
+import { AppMode, Category, SessionSettings, WordItem, WordSet, SentenceSet } from './types';
+import { getAllSets, getSetsByCategory, saveNewSet, deleteSet, incrementReviewCount, getStoredReviewCount, getSentenceSetsByWordSetId, saveSentenceSet, deleteSentenceSet } from './services/storageService';
 import { playSound, speakEnglish } from './services/audioService';
-import { generateWordSet } from './services/geminiService';
+import { generateWordSet, generateSentenceSet } from './services/geminiService';
 import { Button } from './components/Button';
 import { SettingsModal } from './components/SettingsModal';
 
@@ -25,6 +25,10 @@ const App: React.FC = () => {
     batchSize: 50
   });
 
+  // Sentence Practice State
+  const [sentencePickerSet, setSentencePickerSet] = useState<WordSet | null>(null);
+  const [isSentencePickerOpen, setIsSentencePickerOpen] = useState(false);
+
   // Generator State
   const [genCategory, setGenCategory] = useState<Category>(Category.OPIC);
   const [genTopic, setGenTopic] = useState('');
@@ -39,26 +43,45 @@ const App: React.FC = () => {
     setMode(AppMode.SET_LIST);
   };
 
-  const handleStartSession = (set: WordSet) => {
-    setSelectedSet(set);
-    // Prepare words: inject review counts
-    const preparedWords = [...set.words].map(w => ({
-      ...w,
-      reviewCount: getStoredReviewCount(w.id)
-    }));
-    
-    // Shuffle
-    for (let i = preparedWords.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [preparedWords[i], preparedWords[j]] = [preparedWords[j], preparedWords[i]];
+  const handleStartSession = (set: WordSet | SentenceSet) => {
+    if ('words' in set) {
+       setSelectedSet(set as WordSet);
+       const preparedWords = [...set.words].map(w => ({
+         ...w,
+         reviewCount: getStoredReviewCount(w.id)
+       }));
+       // Shuffle for words
+       for (let i = preparedWords.length - 1; i > 0; i--) {
+         const j = Math.floor(Math.random() * (i + 1));
+         [preparedWords[i], preparedWords[j]] = [preparedWords[j], preparedWords[i]];
+       }
+       setWords(preparedWords.slice(0, settings.batchSize));
+    } else {
+       // Sentence Practice
+       setSelectedSet({ id: set.wordSetId, topic: `${set.topic} (Response Practice)` } as any);
+       setWords(set.sentences.map(s => ({ ...s, reviewCount: getStoredReviewCount(s.id) })));
     }
-
-    setWords(preparedWords.slice(0, settings.batchSize));
+    
     setCurrentIndex(0);
     setIsEnglishRevealed(false);
     setIsPaused(false);
     setMode(AppMode.SESSION);
     playSound('pop');
+  };
+
+  const handleGenSentences = async (set: WordSet) => {
+    setMode(AppMode.LOADING);
+    try {
+      const sentenceSet = await generateSentenceSet(set);
+      saveSentenceSet(sentenceSet);
+      playSound('success');
+      setMode(AppMode.SET_LIST);
+      setSentencePickerSet(set);
+      setIsSentencePickerOpen(true);
+    } catch (error) {
+      alert("Sentence generation failed.");
+      setMode(AppMode.SET_LIST);
+    }
   };
 
   const handleGenerate = async () => {
@@ -135,7 +158,7 @@ const App: React.FC = () => {
   }, [mode, currentIndex, isEnglishRevealed, isPaused, settings, handleNextWord, words, recordStudy]);
 
   const renderKorean = (text: string) => {
-    if (selectedSet?.category === Category.SUBJECT_VERB && text.includes('/')) {
+    if (text.includes('/')) {
       return (
         <div className="flex flex-wrap justify-center items-center gap-x-3 gap-y-2">
           {text.split('/').map((part, i, arr) => (
@@ -148,6 +171,24 @@ const App: React.FC = () => {
       );
     }
     return text;
+  };
+
+  // 삭제 처리 헬퍼 함수
+  const handleDeleteSet = (setId: string, topic: string) => {
+    if (confirm(`'${topic}' 세트를 정말 삭제하시겠습니까? 연결된 모든 문장 데이터도 삭제됩니다.`)) {
+      deleteSet(setId);
+      setAvailableSets(prev => prev.filter(s => s.id !== setId));
+      playSound('pop');
+    }
+  };
+
+  const handleDeleteSentenceSet = (id: string) => {
+    if (confirm("이 문장 연습 세트를 삭제하시겠습니까?")) {
+      deleteSentenceSet(id);
+      playSound('pop');
+      // 리스트 갱신을 위해 picker를 닫았다가 다시 여는 효과를 주거나 상태를 관리해야 함
+      // 여기서는 Picker 내부에서 렌더링 시 direct call 하므로 별도 상태 갱신은 localStorage 기반 리렌더링 유도
+    }
   };
 
   if (mode === AppMode.WELCOME) {
@@ -233,24 +274,87 @@ const App: React.FC = () => {
                       </div>
                    </div>
                 </div>
-                <div className="flex items-center gap-3">
-                   <Button onClick={() => handleStartSession(set)} variant="primary" className="py-2.5 px-6 text-xs font-black rounded-xl">STUDY</Button>
+                <div className="flex items-center gap-2 ml-4">
+                   <button 
+                     title="Word Study"
+                     onClick={() => handleStartSession(set)} 
+                     className="px-4 py-2.5 bg-indigo-600 text-white rounded-xl text-xs font-black shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all uppercase tracking-tight"
+                   >
+                     Study
+                   </button>
+                   <button 
+                     title="Generate OPIc Answer Sentences"
+                     onClick={() => handleGenSentences(set)}
+                     className="p-2.5 bg-white text-teal-600 border border-teal-100 rounded-xl hover:bg-teal-50 transition-all group-hover:scale-110"
+                   >
+                     <Sparkles size={18} />
+                   </button>
+                   <button 
+                     title="View Generated Response Sets"
+                     onClick={() => { setSentencePickerSet(set); setIsSentencePickerOpen(true); }}
+                     className="p-2.5 bg-white text-indigo-600 border border-indigo-100 rounded-xl hover:bg-indigo-50 transition-all"
+                   >
+                     <MessageSquare size={18} />
+                   </button>
                    {!set.id.startsWith('seed') && (
-                     <button onClick={() => { deleteSet(set.id); setAvailableSets(prev => prev.filter(s => s.id !== set.id)); }} className="p-2.5 text-slate-300 hover:text-red-500 transition-colors">
-                       <Trash2 size={20} />
+                     <button onClick={() => handleDeleteSet(set.id, set.topic)} className="p-2.5 text-slate-300 hover:text-red-500 transition-colors">
+                       <Trash2 size={18} />
                      </button>
                    )}
                 </div>
               </div>
             ))}
-            {availableSets.length === 0 && (
-              <div className="text-center py-20 bg-slate-50 rounded-[3rem] border-2 border-dashed border-slate-200">
-                <p className="text-slate-400 font-black uppercase tracking-widest text-sm">No custom sets found in this category.</p>
-                <Button onClick={() => setMode(AppMode.GENERATOR)} variant="outline" className="mt-6">Generate New Set</Button>
-              </div>
-            )}
           </div>
         </div>
+
+        {/* Sentence Picker Modal (OPIc Practice Selection) */}
+        {isSentencePickerOpen && sentencePickerSet && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-md p-4">
+            <div className="bg-white rounded-[3rem] w-full max-w-md p-8 shadow-2xl animate-in zoom-in">
+              <div className="flex justify-between items-center mb-8">
+                 <div>
+                    <h3 className="text-2xl font-black text-slate-900 tracking-tighter uppercase">Response Sets</h3>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Select OPIc Answer Practice</p>
+                 </div>
+                 <button onClick={() => setIsSentencePickerOpen(false)} className="p-2 text-slate-400 hover:bg-slate-100 rounded-full"><X size={20} /></button>
+              </div>
+              
+              <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                {getSentenceSetsByWordSetId(sentencePickerSet.id).length > 0 ? (
+                  getSentenceSetsByWordSetId(sentencePickerSet.id).map((ss) => (
+                    <div key={ss.id} className="group p-5 bg-slate-50 rounded-[2rem] border border-slate-100 hover:border-teal-500 hover:bg-white transition-all flex items-center justify-between shadow-sm">
+                      <div className="cursor-pointer flex-1" onClick={() => { handleStartSession(ss); setIsSentencePickerOpen(false); }}>
+                        <div className="text-sm font-black text-slate-800 flex items-center gap-2">
+                           <Quote size={14} className="text-teal-500" />
+                           10 OPIc Responses (with fillers)
+                        </div>
+                        <div className="text-[10px] text-slate-400 font-bold uppercase mt-1 tracking-widest">{new Date(ss.createdAt).toLocaleString()}</div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                         <button onClick={() => { handleStartSession(ss); setIsSentencePickerOpen(false); }} className="p-2 text-teal-600 hover:bg-teal-50 rounded-xl"><Play size={18} fill="currentColor" /></button>
+                         <button onClick={() => handleDeleteSentenceSet(ss.id)} className="p-2 text-slate-300 hover:text-red-500"><Trash2 size={18} /></button>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-12 text-slate-300">
+                    <ListMusic size={40} className="mx-auto mb-4 opacity-20" />
+                    <p className="text-xs font-black uppercase tracking-widest">No response sets generated yet.</p>
+                  </div>
+                )}
+              </div>
+              
+              <Button 
+                onClick={() => { handleGenSentences(sentencePickerSet); setIsSentencePickerOpen(false); }} 
+                className="w-full mt-8 py-4 rounded-2xl flex items-center justify-center gap-2 bg-teal-600 hover:bg-teal-700 shadow-teal-100"
+              >
+                <Sparkles size={18} /> Generate New Response Set
+              </Button>
+            </div>
+          </div>
+        )}
+
+        <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} delay={settings.revealDelay} setDelay={(d) => setSettings(s => ({...s, revealDelay: d}))} autoAdvanceDelay={settings.autoAdvanceDelay} setAutoAdvanceDelay={(d) => setSettings(s => ({...s, autoAdvanceDelay: d}))} batchSize={settings.batchSize} setBatchSize={(b) => setSettings(s => ({...s, batchSize: b}))} />
       </div>
     );
   }
@@ -294,12 +398,11 @@ const App: React.FC = () => {
                  placeholder="e.g. My neighbors, Cloud migration, Python debugging..."
                  className="w-full p-5 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-indigo-600 focus:bg-white outline-none transition-all font-bold text-lg"
                />
-               <p className="text-[10px] text-slate-400 font-medium px-1">Gemini will generate 30 high-quality expressions for this topic.</p>
              </div>
 
              <div className="flex gap-4 pt-4">
                <Button onClick={() => setMode(AppMode.WELCOME)} variant="secondary" className="flex-1 py-5 rounded-2xl">Cancel</Button>
-               <Button onClick={handleGenerate} disabled={!genTopic.trim()} className="flex-[2] py-5 rounded-2xl shadow-indigo-200 shadow-2xl text-lg font-black">Generate JSON &rarr;</Button>
+               <Button onClick={handleGenerate} disabled={!genTopic.trim()} className="flex-[2] py-5 rounded-2xl shadow-indigo-200 shadow-2xl text-lg font-black">Generate Vocab &rarr;</Button>
              </div>
            </div>
         </div>
@@ -315,8 +418,8 @@ const App: React.FC = () => {
            <Brain size={32} />
         </div>
       </div>
-      <h2 className="text-2xl font-black text-slate-900 tracking-tighter mt-10 mb-2 uppercase animate-pulse">Processing JSON Generation</h2>
-      <p className="text-slate-400 font-bold uppercase text-[10px] tracking-[0.2em]">Crafting professional datasets with Gemini Flash</p>
+      <h2 className="text-2xl font-black text-slate-900 tracking-tighter mt-10 mb-2 uppercase animate-pulse">Processing with AI</h2>
+      <p className="text-slate-400 font-bold uppercase text-[10px] tracking-[0.2em]">Crafting high-quality content for you</p>
     </div>
   );
 
@@ -325,11 +428,11 @@ const App: React.FC = () => {
       <div className="bg-white p-12 rounded-[4rem] shadow-2xl max-w-sm w-full text-center space-y-8">
         <div className="w-24 h-24 bg-green-100 rounded-[2rem] flex items-center justify-center mx-auto text-green-600 border-4 border-white shadow-xl rotate-3"><CheckCircle2 size={48} /></div>
         <div className="space-y-2">
-           <h2 className="text-4xl font-black text-slate-900 tracking-tighter">SUCCESS!</h2>
+           <h2 className="text-4xl font-black text-slate-900 tracking-tighter">WELL DONE!</h2>
            <p className="text-slate-400 text-xs font-black uppercase tracking-[0.15em] border-y py-2 border-slate-100">{selectedSet?.topic}</p>
         </div>
         <div className="flex flex-col gap-3 pt-4">
-          <Button onClick={() => handleStartSession(selectedSet!)} className="py-5 text-xl rounded-2xl font-black">RESTART SET</Button>
+          <Button onClick={() => setMode(AppMode.SESSION)} className="py-5 text-xl rounded-2xl font-black">RESTART SESSION</Button>
           <Button variant="secondary" onClick={() => setMode(AppMode.SET_LIST)} className="py-5 text-lg rounded-2xl font-bold">TOPIC SELECTION</Button>
         </div>
       </div>
@@ -372,9 +475,9 @@ const App: React.FC = () => {
             <div className="flex-1 flex flex-col items-center justify-center p-10 md:p-14 text-center">
               <div className="space-y-8 mb-16 w-full">
                 <span className="text-slate-300 text-xs font-black uppercase tracking-[0.3em]">
-                  {selectedSet?.category === Category.SUBJECT_VERB ? "Conceptualize Phrase" : "Definition"}
+                  {currentWord?.partOfSpeech === 'sentence' || currentWord?.partOfSpeech === 'OPIc Response' ? "Memorize Answer Response" : "Recall Meaning"}
                 </span>
-                <div className="text-4xl md:text-6xl font-black text-slate-900 tracking-tight leading-tight">
+                <div className={`font-black text-slate-900 tracking-tight leading-tight ${currentWord?.korean.length > 50 ? 'text-xl md:text-2xl' : 'text-3xl md:text-5xl'}`}>
                   {renderKorean(currentWord?.korean || "")}
                 </div>
               </div>
@@ -383,10 +486,12 @@ const App: React.FC = () => {
                 <div className="space-y-10 animate-in fade-in zoom-in duration-500 w-full">
                   <div className="w-24 h-2 bg-indigo-600 mx-auto rounded-full shadow-sm"></div>
                   <div className="space-y-4">
-                    <span className="text-indigo-400 text-xs font-black uppercase tracking-[0.2em] flex items-center justify-center gap-2"><Volume2 size={20} /> Professional Expression</span>
-                    <h3 className="text-4xl md:text-5xl font-black text-indigo-700 tracking-tighter leading-none">{currentWord?.english}</h3>
+                    <span className="text-indigo-400 text-xs font-black uppercase tracking-[0.2em] flex items-center justify-center gap-2"><Volume2 size={20} /> Targeted Response</span>
+                    <h3 className={`font-black text-indigo-700 tracking-tighter leading-tight ${currentWord?.english.length > 80 ? 'text-lg md:text-xl' : currentWord?.english.length > 40 ? 'text-xl md:text-2xl' : 'text-3xl md:text-4xl'}`}>
+                      {currentWord?.english}
+                    </h3>
                   </div>
-                  {currentWord?.example && (
+                  {currentWord?.example && !['sentence', 'OPIc Response'].includes(currentWord.partOfSpeech) && (
                     <div className="bg-slate-50/80 p-8 rounded-[2.5rem] border border-slate-100 max-w-md mx-auto shadow-inner">
                       <p className="text-slate-600 text-base font-medium italic leading-relaxed">"{currentWord.example}"</p>
                     </div>
@@ -410,7 +515,7 @@ const App: React.FC = () => {
                 </div>
                 <div className="px-6 py-3 bg-white rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
                   <div className={`w-3 h-3 rounded-full transition-all duration-300 ${isPaused ? 'bg-slate-300' : isEnglishRevealed ? 'bg-teal-500 animate-pulse shadow-sm shadow-teal-300' : 'bg-indigo-600 animate-pulse shadow-sm shadow-indigo-300'}`} />
-                  <span className="text-xs text-slate-400 font-black uppercase tracking-widest">{isPaused ? 'Session Paused' : isEnglishRevealed ? 'Next Word Soon' : 'Mental Recall'}</span>
+                  <span className="text-xs text-slate-400 font-black uppercase tracking-widest">{isPaused ? 'Paused' : isEnglishRevealed ? 'Next Soon' : 'Recalling'}</span>
                 </div>
               </div>
 

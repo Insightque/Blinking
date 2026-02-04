@@ -1,10 +1,11 @@
 
-import { Category, WordSet, WordItem } from "../types";
+import { Category, WordSet, WordItem, SentenceSet } from "../types";
 import { OPIC_SEED_DATA } from "../data/opicData";
 import { AI_SEED_DATA } from "../data/aiData";
 import { SV_SEED_DATA } from "../data/svData";
 
 const SETS_KEY = 'lingofocus_word_sets_v3'; 
+const SENTENCE_SETS_KEY = 'lingofocus_sentence_sets_v1';
 const COUNTS_KEY = 'lingofocus_review_counts';
 
 const mapToWordItems = (raw: Partial<WordItem>[], prefix: string): WordItem[] => {
@@ -61,10 +62,35 @@ export const saveNewSet = (newSet: WordSet) => {
 export const deleteSet = (setId: string) => {
   const sets = getAllSets().filter(s => s.id !== setId);
   localStorage.setItem(SETS_KEY, JSON.stringify(sets));
+  // Delete associated sentences
+  const sentenceSets = getAllSentenceSets().filter(ss => ss.wordSetId !== setId);
+  localStorage.setItem(SENTENCE_SETS_KEY, JSON.stringify(sentenceSets));
+};
+
+// Sentence Storage Logic
+export const getAllSentenceSets = (): SentenceSet[] => {
+  const stored = localStorage.getItem(SENTENCE_SETS_KEY);
+  return stored ? JSON.parse(stored) : [];
+};
+
+export const getSentenceSetsByWordSetId = (wordSetId: string): SentenceSet[] => {
+  return getAllSentenceSets().filter(ss => ss.wordSetId === wordSetId);
+};
+
+export const saveSentenceSet = (newSet: SentenceSet) => {
+  const sets = getAllSentenceSets();
+  sets.push(newSet);
+  localStorage.setItem(SENTENCE_SETS_KEY, JSON.stringify(sets));
+};
+
+export const deleteSentenceSet = (id: string) => {
+  const sets = getAllSentenceSets().filter(ss => ss.id !== id);
+  localStorage.setItem(SENTENCE_SETS_KEY, JSON.stringify(sets));
 };
 
 export const clearAllData = () => {
   localStorage.removeItem(SETS_KEY);
+  localStorage.removeItem(SENTENCE_SETS_KEY);
   localStorage.removeItem(COUNTS_KEY);
   window.location.reload();
 };
@@ -72,6 +98,7 @@ export const clearAllData = () => {
 export const exportBackup = () => {
   const data = {
     sets: getAllSets(),
+    sentenceSets: getAllSentenceSets(),
     counts: JSON.parse(localStorage.getItem(COUNTS_KEY) || '{}'),
     exportedAt: new Date().toISOString()
   };
@@ -89,6 +116,9 @@ export const importBackup = (jsonString: string): boolean => {
     const data = JSON.parse(jsonString);
     if (data.sets && Array.isArray(data.sets)) {
       localStorage.setItem(SETS_KEY, JSON.stringify(data.sets));
+      if (data.sentenceSets) {
+        localStorage.setItem(SENTENCE_SETS_KEY, JSON.stringify(data.sentenceSets));
+      }
       if (data.counts) {
         localStorage.setItem(COUNTS_KEY, JSON.stringify(data.counts));
       }
