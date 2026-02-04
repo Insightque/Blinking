@@ -10,8 +10,8 @@ export enum AppMode {
 
 export enum Category {
   OPIC = 'OPIC',
-  AI_ENGINEERING = 'AI_ENGINEERING',
-  SUBJECT_VERB = 'SUBJECT_VERB'
+  SUBJECT_VERB = 'SUBJECT_VERB',
+  AI_ENGINEERING = 'AI_ENGINEERING' // 내부 호환성을 위해 유지
 }
 
 export interface WordItem {
@@ -36,7 +36,7 @@ export interface SentenceSet {
   wordSetId: string;
   topic: string;
   createdAt: string;
-  sentences: WordItem[]; // Reuse WordItem structure for sentences
+  sentences: WordItem[];
 }
 
 export interface SessionSettings {
