@@ -1,6 +1,6 @@
 
 import React, { useRef } from 'react';
-import { X, Trash2, RefreshCcw, Download, Upload } from 'lucide-react';
+import { X, Trash2, RefreshCcw, Download, Upload, Volume2 } from 'lucide-react';
 import { Button } from './Button';
 import { clearAllData, exportBackup, importBackup } from '../services/storageService';
 
@@ -13,6 +13,8 @@ interface SettingsModalProps {
   setAutoAdvanceDelay: (val: number) => void;
   batchSize: number;
   setBatchSize: (val: number) => void;
+  readKoreanAloud: boolean;
+  setReadKoreanAloud: (val: boolean) => void;
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
@@ -23,7 +25,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   autoAdvanceDelay,
   setAutoAdvanceDelay,
   batchSize,
-  setBatchSize
+  setBatchSize,
+  readKoreanAloud,
+  setReadKoreanAloud
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -39,7 +43,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // 파일 확장자 체크 (보안 및 편의성)
     if (!file.name.toLowerCase().endsWith('.json') && file.type !== 'application/json') {
       alert("JSON 파일만 불러올 수 있습니다.");
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -80,6 +83,22 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         <h2 className="text-2xl font-black text-slate-800 mb-8 tracking-tighter uppercase">Preferences</h2>
         
         <div className="space-y-6 overflow-y-auto max-h-[70vh] pr-2">
+          {/* TTS Option */}
+          <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-indigo-100 text-indigo-600 rounded-lg">
+                <Volume2 size={18} />
+              </div>
+              <span className="text-sm font-black text-slate-700">한글 제시 시 음성 읽기</span>
+            </div>
+            <button 
+              onClick={() => setReadKoreanAloud(!readKoreanAloud)}
+              className={`w-12 h-6 rounded-full transition-colors relative ${readKoreanAloud ? 'bg-indigo-600' : 'bg-slate-300'}`}
+            >
+              <div className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${readKoreanAloud ? 'translate-x-6' : ''}`} />
+            </button>
+          </div>
+
           {/* Reveal Delay */}
           <div>
             <label className="block text-xs font-black uppercase tracking-widest text-slate-400 mb-3">
@@ -162,7 +181,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 accept="application/json,.json"
               />
             </div>
-            <p className="text-[10px] text-slate-400 font-medium text-center">파일 탐색기에서 내보낸 .json 파일을 선택하세요.</p>
           </div>
 
           <div className="pt-4">

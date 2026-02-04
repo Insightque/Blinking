@@ -44,4 +44,5 @@ export interface SessionSettings {
   revealDelay: number;
   autoAdvanceDelay: number;
   batchSize: number;
+  readKoreanAloud: boolean;
 }

@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Settings, Play, Pause, BookOpen, Brain, ChevronRight, ChevronLeft, CheckCircle2, Home, Clock, Plus, Minus, Repeat, Sparkles, Copy, ClipboardCheck, Volume2, Languages, PlusCircle, Trash2, Calendar, Database, MessageSquare, ListMusic, X, Quote } from 'lucide-react';
 import { AppMode, Category, SessionSettings, WordItem, WordSet, SentenceSet } from './types';
 import { getAllSets, getSetsByCategory, saveNewSet, deleteSet, incrementReviewCount, getStoredReviewCount, getSentenceSetsByWordSetId, saveSentenceSet, deleteSentenceSet } from './services/storageService';
-import { playSound, speakEnglish } from './services/audioService';
+import { playSound, speakEnglish, speakKorean } from './services/audioService';
 import { generateWordSet, generateSentenceSet } from './services/geminiService';
 import { Button } from './components/Button';
 import { SettingsModal } from './components/SettingsModal';
@@ -22,7 +22,8 @@ const App: React.FC = () => {
     category: Category.OPIC,
     revealDelay: 3,
     autoAdvanceDelay: 3,
-    batchSize: 50
+    batchSize: 50,
+    readKoreanAloud: false
   });
 
   // Sentence Practice State
@@ -134,6 +135,11 @@ const App: React.FC = () => {
       const currentWord = words[currentIndex];
 
       if (!isEnglishRevealed) {
+        // 처음 한글 제시 시 읽어주기 (옵션이 켜져있을 때)
+        if (settings.readKoreanAloud) {
+          speakKorean(currentWord.korean);
+        }
+
         tickIntervalRef.current = setInterval(() => {
           playSound('tick');
         }, 1000);
@@ -173,7 +179,6 @@ const App: React.FC = () => {
     return text;
   };
 
-  // 삭제 처리 헬퍼 함수
   const handleDeleteSet = (setId: string, topic: string) => {
     if (confirm(`'${topic}' 세트를 정말 삭제하시겠습니까? 연결된 모든 문장 데이터도 삭제됩니다.`)) {
       deleteSet(setId);
@@ -193,7 +198,6 @@ const App: React.FC = () => {
     const allSets = getAllSets();
     const counts = {
       [Category.OPIC]: allSets.filter(s => s.category === Category.OPIC).reduce((acc, s) => acc + s.words.length, 0),
-      [Category.AI_ENGINEERING]: allSets.filter(s => s.category === Category.AI_ENGINEERING).reduce((acc, s) => acc + s.words.length, 0),
       [Category.SUBJECT_VERB]: allSets.filter(s => s.category === Category.SUBJECT_VERB).reduce((acc, s) => acc + s.words.length, 0)
     };
 
@@ -222,13 +226,6 @@ const App: React.FC = () => {
               color="orange"
               onClick={() => loadCategorySets(Category.OPIC)}
             />
-            <HomeCard 
-              icon={<Brain size={18} />} 
-              title="AI Engineering Vocab" 
-              desc={`${counts[Category.AI_ENGINEERING]} terms across sets`}
-              color="blue"
-              onClick={() => loadCategorySets(Category.AI_ENGINEERING)}
-            />
             <Button onClick={() => setMode(AppMode.GENERATOR)} variant="secondary" className="flex items-center justify-center gap-2 py-4 rounded-2xl border-dashed border-2 bg-transparent text-indigo-600 border-indigo-200 hover:border-indigo-600 mt-2">
               <PlusCircle size={20} /> AI Custom Set Generation
             </Button>
@@ -238,7 +235,18 @@ const App: React.FC = () => {
              <button onClick={() => setIsSettingsOpen(true)} className="flex items-center gap-1.5 hover:text-indigo-600 transition-colors"><Settings size={12} /> Global Preferences</button>
           </div>
         </div>
-        <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} delay={settings.revealDelay} setDelay={(d) => setSettings(s => ({...s, revealDelay: d}))} autoAdvanceDelay={settings.autoAdvanceDelay} setAutoAdvanceDelay={(d) => setSettings(s => ({...s, autoAdvanceDelay: d}))} batchSize={settings.batchSize} setBatchSize={(b) => setSettings(s => ({...s, batchSize: b}))} />
+        <SettingsModal 
+          isOpen={isSettingsOpen} 
+          onClose={() => setIsSettingsOpen(false)} 
+          delay={settings.revealDelay} 
+          setDelay={(d) => setSettings(s => ({...s, revealDelay: d}))} 
+          autoAdvanceDelay={settings.autoAdvanceDelay} 
+          setAutoAdvanceDelay={(d) => setSettings(s => ({...s, autoAdvanceDelay: d}))} 
+          batchSize={settings.batchSize} 
+          setBatchSize={(b) => setSettings(s => ({...s, batchSize: b}))} 
+          readKoreanAloud={settings.readKoreanAloud} 
+          setReadKoreanAloud={(v) => setSettings(s => ({...s, readKoreanAloud: v}))} 
+        />
       </div>
     );
   }
@@ -305,7 +313,6 @@ const App: React.FC = () => {
           </div>
         </div>
 
-        {/* Sentence Picker Modal (OPIc Practice Selection) */}
         {isSentencePickerOpen && sentencePickerSet && (
           <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-md p-4">
             <div className="bg-white rounded-[3rem] w-full max-w-md p-8 shadow-2xl animate-in zoom-in">
@@ -352,7 +359,7 @@ const App: React.FC = () => {
           </div>
         )}
 
-        <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} delay={settings.revealDelay} setDelay={(d) => setSettings(s => ({...s, revealDelay: d}))} autoAdvanceDelay={settings.autoAdvanceDelay} setAutoAdvanceDelay={(d) => setSettings(s => ({...s, autoAdvanceDelay: d}))} batchSize={settings.batchSize} setBatchSize={(b) => setSettings(s => ({...s, batchSize: b}))} />
+        <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} delay={settings.revealDelay} setDelay={(d) => setSettings(s => ({...s, revealDelay: d}))} autoAdvanceDelay={settings.autoAdvanceDelay} setAutoAdvanceDelay={(d) => setSettings(s => ({...s, autoAdvanceDelay: d}))} batchSize={settings.batchSize} setBatchSize={(b) => setSettings(s => ({...s, batchSize: b}))} readKoreanAloud={settings.readKoreanAloud} setReadKoreanAloud={(v) => setSettings(s => ({...s, readKoreanAloud: v}))} />
       </div>
     );
   }
@@ -374,14 +381,14 @@ const App: React.FC = () => {
            <div className="space-y-8">
              <div className="space-y-4">
                <label className="text-[11px] font-black uppercase tracking-widest text-slate-400">1. Choose Category</label>
-               <div className="grid grid-cols-3 gap-2">
-                 {[Category.OPIC, Category.AI_ENGINEERING, Category.SUBJECT_VERB].map(cat => (
+               <div className="grid grid-cols-2 gap-2">
+                 {[Category.OPIC, Category.SUBJECT_VERB].map(cat => (
                    <button 
                      key={cat}
                      onClick={() => setGenCategory(cat)}
                      className={`py-4 px-2 rounded-2xl text-[10px] font-black transition-all border-2 ${genCategory === cat ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-100' : 'bg-slate-50 border-slate-100 text-slate-400 hover:border-indigo-200 hover:bg-white'}`}
                    >
-                     {cat === Category.SUBJECT_VERB ? "S+V Pattern" : cat === Category.OPIC ? "OPIc Speaking" : "AI Technology"}
+                     {cat === Category.SUBJECT_VERB ? "S+V Pattern" : "OPIc Speaking"}
                    </button>
                  ))}
                </div>
@@ -393,14 +400,14 @@ const App: React.FC = () => {
                  type="text"
                  value={genTopic}
                  onChange={(e) => setGenTopic(e.target.value)}
-                 placeholder="e.g. My neighbors, Cloud migration, Python debugging..."
+                 placeholder="e.g. My neighbors, Daily routine, Work tasks..."
                  className="w-full p-5 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-indigo-600 focus:bg-white outline-none transition-all font-bold text-lg"
                />
              </div>
 
              <div className="flex gap-4 pt-4">
                <Button onClick={() => setMode(AppMode.WELCOME)} variant="secondary" className="flex-1 py-5 rounded-2xl">Cancel</Button>
-               <Button onClick={handleGenerate} disabled={!genTopic.trim()} className="flex-[2] py-5 rounded-2xl shadow-indigo-200 shadow-2xl text-lg font-black">Generate Vocab &rarr;</Button>
+               <Button onClick={handleGenerate} disabled={!genTopic.trim()} className="flex-[2] py-5 rounded-2xl shadow-indigo-200 shadow-2xl text-lg font-black">Generate Patterns &rarr;</Button>
              </div>
            </div>
         </div>
@@ -417,7 +424,7 @@ const App: React.FC = () => {
         </div>
       </div>
       <h2 className="text-2xl font-black text-slate-900 tracking-tighter mt-10 mb-2 uppercase animate-pulse">Processing with AI</h2>
-      <p className="text-slate-400 font-bold uppercase text-[10px] tracking-[0.2em]">Crafting high-quality content for you</p>
+      <p className="text-slate-400 font-bold uppercase text-[10px] tracking-[0.2em]">Crafting high-quality patterns for you</p>
     </div>
   );
 
@@ -443,13 +450,19 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col select-none overflow-hidden">
       <header className="bg-white border-b border-slate-200 px-6 py-5 flex items-center justify-between sticky top-0 z-20">
-        <button onClick={() => setMode(AppMode.WELCOME)} className="flex items-center gap-4 group">
-          <div className="w-10 h-10 bg-indigo-600 rounded-[1.2rem] flex items-center justify-center text-white font-black text-lg shadow-lg shadow-indigo-100 group-hover:scale-110 transition-transform">LF</div>
+        <div className="flex items-center gap-4">
+          <button 
+            onClick={() => { if(confirm("학습을 종료하고 목록으로 돌아가시겠습니까?")) setMode(AppMode.SET_LIST); }} 
+            className="p-3 bg-slate-100 hover:bg-slate-200 rounded-2xl text-slate-600 transition-all"
+            title="Exit Session"
+          >
+            <X size={20} strokeWidth={3} />
+          </button>
           <div className="text-left hidden sm:block">
              <span className="font-black text-xl text-slate-800 tracking-tighter block leading-none">LingoFocus</span>
              <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest truncate max-w-[180px]">{selectedSet?.topic}</span>
           </div>
-        </button>
+        </div>
         <div className="flex-1 max-w-md mx-4 md:mx-10">
           <div className="h-2.5 w-full bg-slate-100 rounded-full overflow-hidden shadow-inner">
             <div className="h-full bg-indigo-600 transition-all duration-1000 ease-out" style={{ width: `${progress}%` }} />
@@ -534,7 +547,7 @@ const App: React.FC = () => {
         </div>
       </main>
 
-      <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} delay={settings.revealDelay} setDelay={(d) => setSettings(s => ({...s, revealDelay: d}))} autoAdvanceDelay={settings.autoAdvanceDelay} setAutoAdvanceDelay={(d) => setSettings(s => ({...s, autoAdvanceDelay: d}))} batchSize={settings.batchSize} setBatchSize={(b) => setSettings(s => ({...s, batchSize: b}))} />
+      <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} delay={settings.revealDelay} setDelay={(d) => setSettings(s => ({...s, revealDelay: d}))} autoAdvanceDelay={settings.autoAdvanceDelay} setAutoAdvanceDelay={(d) => setSettings(s => ({...s, autoAdvanceDelay: d}))} batchSize={settings.batchSize} setBatchSize={(b) => setSettings(s => ({...s, batchSize: b}))} readKoreanAloud={settings.readKoreanAloud} setReadKoreanAloud={(v) => setSettings(s => ({...s, readKoreanAloud: v}))} />
     </div>
   );
 };

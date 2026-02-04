@@ -37,11 +37,22 @@ export const playSound = (type: 'pop' | 'tick' | 'success') => {
 
 export const speakEnglish = (text: string) => {
   if ('speechSynthesis' in window) {
-    // Cancel any ongoing speech
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'en-US';
     utterance.rate = 0.9;
+    window.speechSynthesis.speak(utterance);
+  }
+};
+
+export const speakKorean = (text: string) => {
+  if ('speechSynthesis' in window) {
+    // 슬래시(/) 제거하고 읽기
+    const cleanText = text.replace(/\//g, '');
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(cleanText);
+    utterance.lang = 'ko-KR';
+    utterance.rate = 1.0;
     window.speechSynthesis.speak(utterance);
   }
 };

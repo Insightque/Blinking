@@ -9,10 +9,10 @@ export const generateWordSet = async (category: Category, topic: string): Promis
   if (category === Category.OPIC) {
     systemInstruction = "You are an expert OPIc English coach. Generate high-frequency, natural conversational expressions that help students achieve AL (Advanced Low) scores. Focus on idiomatic expressions and complex sentence structures.";
   } else if (category === Category.AI_ENGINEERING) {
-    systemInstruction = "You are a senior AI research engineer. Generate professional technical terminology and industry-standard jargon used in state-of-the-art AI papers, system architecture meetings, and engineering documentations.";
+    systemInstruction = "You are a technical recruiter. Generate standard professional terminology used in AI and software engineering.";
   } else {
-    // SUBJECT_VERB 전문 지침
-    systemInstruction = "You are an English syntax expert specializing in the 'Subject + Verb' chunking method. Your goal is to help learners internalize English word order. You create patterns that start with a clear Subject and Verb chunk.";
+    // SUBJECT_VERB 전문 지침: 짧고 명확한 주어+동사 패턴에 집중
+    systemInstruction = "You are an English syntax specialist. You create short 'Subject + Verb' pattern chunks (e.g., 'I've decided to', 'She is planning on', 'We are about to'). Your goal is to help students practice the core 'Subject + Verb' structure. The Korean translation MUST use slashes (/) to strictly match the English word order.";
   }
 
   const prompt = `Generate a JSON array of 50 distinct English training items for the topic: "${topic}".
@@ -20,10 +20,10 @@ export const generateWordSet = async (category: Category, topic: string): Promis
 
   ${category === Category.SUBJECT_VERB ? 
     `CRITICAL RULES for Subject+Verb category:
-    1. Each item must be a short sentence or clause starting with a clear Subject and Verb.
-    2. The 'korean' field MUST use slashes (/) to mirror the English word order.
-       Example: English: "I'd like to describe my room", Korean: "나는 / 묘사하고 싶다 / 나의 방을"
-    3. The 'partOfSpeech' field should be "pattern".` 
+    1. Each item MUST be a short pattern focusing on the Subject and Verb (maximum 5-7 words total).
+    2. The 'korean' field MUST use slashes (/) to mirror the English word order exactly.
+       Example: English: "I'm planning to visit", Korean: "나는 / 계획 중이다 / 방문하기를"
+    3. The 'partOfSpeech' field MUST be "pattern".` 
     : 
     `Include a realistic professional example sentence for each item.`
   }
