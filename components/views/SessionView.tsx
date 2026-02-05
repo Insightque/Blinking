@@ -6,6 +6,8 @@ import { Header } from '../Header';
 import { Button } from '../Button';
 import { playSound, speakEnglish, speakKorean, stopSpeech } from '../../services/audioService';
 
+type SessionPhase = 'IDLE' | 'READING_KOREAN' | 'COUNTDOWN' | 'READING_ENGLISH' | 'WAIT_NEXT';
+
 interface SessionViewProps {
   topic: string;
   words: WordItem[];
@@ -28,24 +30,25 @@ export const SessionView: React.FC<SessionViewProps> = ({
   onRecordStudy
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [isEnglishRevealed, setIsEnglishRevealed] = useState(false);
+  const [phase, setPhase] = useState<SessionPhase>('IDLE');
   const [isPaused, setIsPaused] = useState(false);
   
   const timerRef = useRef<any>(null);
   const tickIntervalRef = useRef<any>(null);
+  const currentWord = words[currentIndex];
 
   const clearTimers = useCallback(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
     if (tickIntervalRef.current) clearInterval(tickIntervalRef.current);
-    stopSpeech();
   }, []);
 
   const handleNextWord = useCallback(() => {
     if (currentIndex < words.length - 1) {
       setCurrentIndex(prev => prev + 1);
-      setIsEnglishRevealed(false);
+      setPhase('IDLE');
       playSound('pop');
     } else {
+      stopSpeech();
       clearTimers();
       onFinish();
     }
@@ -54,51 +57,76 @@ export const SessionView: React.FC<SessionViewProps> = ({
   const handlePreviousWord = useCallback(() => {
     if (currentIndex > 0) {
       setCurrentIndex(prev => prev - 1);
-      setIsEnglishRevealed(false);
+      setPhase('IDLE');
       playSound('pop');
     }
   }, [currentIndex]);
 
   const handleExit = useCallback(() => {
     if (confirm("학습을 종료하고 목록으로 돌아가시겠습니까?")) {
+      stopSpeech();
       clearTimers();
       onExit();
     }
   }, [clearTimers, onExit]);
 
-  // 일시정지 버튼 클릭 시 음성 즉시 중단 처리
   const togglePause = useCallback(() => {
     const newPausedState = !isPaused;
     setIsPaused(newPausedState);
     if (newPausedState) {
       stopSpeech();
+      clearTimers();
     }
-  }, [isPaused]);
+  }, [isPaused, clearTimers]);
 
+  // 학습 단계 시퀀스 제어
   useEffect(() => {
-    clearTimers();
+    if (isPaused) return;
 
-    if (!isPaused && words.length > 0) {
-      const currentWord = words[currentIndex];
+    const runPhase = async () => {
+      clearTimers();
 
-      if (!isEnglishRevealed) {
-        if (settings.readKoreanAloud) speakKorean(currentWord.korean);
-        
-        tickIntervalRef.current = setInterval(() => playSound('tick'), 1000);
-        
-        timerRef.current = setTimeout(() => {
-          setIsEnglishRevealed(true);
-          speakEnglish(currentWord.english);
+      switch (phase) {
+        case 'IDLE':
+          setPhase('READING_KOREAN');
+          break;
+
+        case 'READING_KOREAN':
+          if (settings.readKoreanAloud) {
+            await speakKorean(currentWord.korean);
+          }
+          setPhase('COUNTDOWN');
+          break;
+
+        case 'COUNTDOWN':
+          // 한글 읽기가 끝난 후 카운트다운 시작
+          tickIntervalRef.current = setInterval(() => playSound('tick'), 1000);
+          timerRef.current = setTimeout(() => {
+            clearInterval(tickIntervalRef.current);
+            setPhase('READING_ENGLISH');
+          }, settings.revealDelay * 1000);
+          break;
+
+        case 'READING_ENGLISH':
+          // 영어 음성 재생
           onRecordStudy(currentWord.id);
-          if (tickIntervalRef.current) clearInterval(tickIntervalRef.current);
-        }, settings.revealDelay * 1000);
-      } else {
-        timerRef.current = setTimeout(() => handleNextWord(), settings.autoAdvanceDelay * 1000);
+          await speakEnglish(currentWord.english);
+          setPhase('WAIT_NEXT');
+          break;
+
+        case 'WAIT_NEXT':
+          // 영어 음성 재생이 끝난 후 자동 전환 대기
+          timerRef.current = setTimeout(() => {
+            handleNextWord();
+          }, settings.autoAdvanceDelay * 1000);
+          break;
       }
-    }
-    
+    };
+
+    runPhase();
+
     return () => clearTimers();
-  }, [currentIndex, isEnglishRevealed, isPaused, settings, handleNextWord, words, onRecordStudy, clearTimers]);
+  }, [phase, isPaused, currentIndex, currentWord, settings, onRecordStudy, handleNextWord, clearTimers]);
 
   const renderKorean = (text: string) => {
     if (text.includes('/')) {
@@ -116,7 +144,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
     return text;
   };
 
-  const currentWord = words[currentIndex];
+  const isEnglishRevealed = phase === 'READING_ENGLISH' || phase === 'WAIT_NEXT';
   const progress = words.length > 0 ? ((currentIndex + 1) / words.length) * 100 : 0;
 
   return (
@@ -146,7 +174,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
             <div className="flex-1 flex flex-col items-center justify-center p-6 sm:p-14 text-center">
               <div className="space-y-4 sm:space-y-8 mb-8 sm:mb-12 w-full">
                 <span className="text-slate-300 text-[10px] sm:text-xs font-black uppercase tracking-[0.3em]">
-                  {currentWord?.partOfSpeech === 'pattern' ? "Memorize Pattern" : "Recall Meaning"}
+                  {currentWord?.partOfSpeech.includes('Type') ? "Structure Study" : "OPIc Training"}
                 </span>
                 <div className={`font-black text-slate-900 tracking-tight leading-tight ${currentWord?.korean.length > 50 ? 'text-lg sm:text-2xl' : 'text-2xl sm:text-5xl'}`}>
                   {renderKorean(currentWord?.korean || "")}
@@ -158,7 +186,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
                   <div className="w-16 sm:w-24 h-1.5 sm:h-2 bg-indigo-600 rounded-full shadow-sm"></div>
                   <div className="space-y-2 sm:space-y-4 w-full">
                     <span className="text-indigo-400 text-[10px] sm:text-xs font-black uppercase tracking-[0.2em] flex items-center justify-center gap-1 sm:gap-2">
-                      <Volume2 size={16} className="sm:size-[20px]" /> Targeted Response
+                      <Volume2 size={16} className="sm:size-[20px]" /> {phase === 'READING_ENGLISH' ? 'Playing Audio' : 'Ready for Next'}
                     </span>
                     <h3 className={`font-black text-indigo-700 tracking-tighter leading-tight ${currentWord?.english.length > 80 ? 'text-base sm:text-xl' : currentWord?.english.length > 40 ? 'text-lg sm:text-2xl' : 'text-2xl sm:text-4xl'}`}>
                       {currentWord?.english}
@@ -176,9 +204,18 @@ export const SessionView: React.FC<SessionViewProps> = ({
                 </div>
               ) : (
                 <div className="h-32 sm:h-40 flex items-center justify-center gap-3 sm:gap-4">
-                  <div className="w-3 h-3 sm:w-4 sm:h-4 bg-indigo-100 rounded-full animate-bounce"></div>
-                  <div className="w-3 h-3 sm:w-4 sm:h-4 bg-indigo-300 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                  <div className="w-3 h-3 sm:w-4 sm:h-4 bg-indigo-600 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                  {phase === 'READING_KOREAN' ? (
+                    <div className="flex flex-col items-center gap-3">
+                       <Volume2 className="text-indigo-400 animate-pulse" size={24} />
+                       <span className="text-[10px] font-black text-indigo-300 uppercase tracking-widest">Listening...</span>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="w-3 h-3 sm:w-4 sm:h-4 bg-indigo-100 rounded-full animate-bounce"></div>
+                      <div className="w-3 h-3 sm:w-4 sm:h-4 bg-indigo-300 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                      <div className="w-3 h-3 sm:w-4 sm:h-4 bg-indigo-600 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                    </>
+                  )}
                 </div>
               )}
             </div>
@@ -205,7 +242,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
                 <div className="px-3 sm:px-6 py-2 sm:py-3 bg-white rounded-xl sm:rounded-2xl shadow-sm border flex items-center gap-2 sm:gap-4">
                   <div className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full ${isPaused ? 'bg-slate-300' : isEnglishRevealed ? 'bg-teal-500 animate-pulse' : 'bg-indigo-600 animate-pulse'}`} />
                   <span className="text-[10px] sm:text-xs text-slate-400 font-black uppercase tracking-widest">
-                    {isPaused ? 'Paused' : isEnglishRevealed ? 'Next Soon' : 'Recalling'}
+                    {isPaused ? 'Paused' : phase}
                   </span>
                 </div>
               </div>
@@ -223,16 +260,26 @@ export const SessionView: React.FC<SessionViewProps> = ({
               </div>
             </div>
             
-            {!isPaused && (
+            {!isPaused && (phase === 'COUNTDOWN' || phase === 'WAIT_NEXT') && (
               <div 
-                key={`timer-${currentIndex}-${isEnglishRevealed}`} 
-                className={`absolute bottom-0 left-0 h-2 sm:h-2.5 transition-all ease-linear shadow-sm ${isEnglishRevealed ? 'bg-teal-500' : 'bg-indigo-600'}`}
-                style={{ width: '100%', transitionDuration: isEnglishRevealed ? `${settings.autoAdvanceDelay}s` : `${settings.revealDelay}s` }} 
+                key={`${currentIndex}-${phase}`} 
+                className={`absolute bottom-0 left-0 h-2 sm:h-2.5 transition-all ease-linear shadow-sm ${phase === 'WAIT_NEXT' ? 'bg-teal-500' : 'bg-indigo-600'}`}
+                style={{ 
+                  width: '100%', 
+                  animation: `timerProgress ${phase === 'WAIT_NEXT' ? settings.autoAdvanceDelay : settings.revealDelay}s linear forwards` 
+                }} 
               />
             )}
           </div>
         </div>
       </main>
+
+      <style>{`
+        @keyframes timerProgress {
+          from { width: 0%; }
+          to { width: 100%; }
+        }
+      `}</style>
     </div>
   );
 };

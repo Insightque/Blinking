@@ -49,59 +49,75 @@ export const stopSpeech = () => {
   }
 };
 
-export const speakEnglish = (text: string) => {
-  if (!('speechSynthesis' in window)) return;
+/**
+ * 영어를 읽어줍니다. 재생이 완료되면 resolve 되는 Promise를 반환합니다.
+ */
+export const speakEnglish = (text: string): Promise<void> => {
+  return new Promise((resolve) => {
+    if (!('speechSynthesis' in window)) {
+      resolve();
+      return;
+    }
 
-  // 이전 음성 중단
-  stopSpeech();
+    stopSpeech();
 
-  // 짧은 딜레이 후 재생 (일부 브라우저에서 cancel 직후 speak 호출 시 무음 현상 방지)
-  setTimeout(() => {
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'en-US';
-    utterance.rate = 0.95;
-    utterance.pitch = 1.0;
-    
-    // 참조 유지
-    currentUtterance = utterance;
+    setTimeout(() => {
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'en-US';
+      utterance.rate = 0.95;
+      utterance.pitch = 1.0;
+      
+      currentUtterance = utterance;
 
-    utterance.onend = () => {
-      currentUtterance = null;
-    };
+      utterance.onend = () => {
+        currentUtterance = null;
+        resolve();
+      };
 
-    utterance.onerror = (event) => {
-      console.error("SpeechSynthesis error:", event);
-      currentUtterance = null;
-    };
+      utterance.onerror = (event) => {
+        console.error("SpeechSynthesis error:", event);
+        currentUtterance = null;
+        resolve(); // 에러 발생 시에도 흐름이 막히지 않도록 resolve
+      };
 
-    window.speechSynthesis.speak(utterance);
-  }, 50);
+      window.speechSynthesis.speak(utterance);
+    }, 50);
+  });
 };
 
-export const speakKorean = (text: string) => {
-  if (!('speechSynthesis' in window)) return;
+/**
+ * 한글을 읽어줍니다. 재생이 완료되면 resolve 되는 Promise를 반환합니다.
+ */
+export const speakKorean = (text: string): Promise<void> => {
+  return new Promise((resolve) => {
+    if (!('speechSynthesis' in window)) {
+      resolve();
+      return;
+    }
 
-  stopSpeech();
+    stopSpeech();
 
-  setTimeout(() => {
-    // 슬래시(/) 제거 및 특수문자 정리하여 자연스러운 읽기 지원
-    const cleanText = text.replace(/\//g, ' ').trim();
-    const utterance = new SpeechSynthesisUtterance(cleanText);
-    utterance.lang = 'ko-KR';
-    utterance.rate = 1.0;
-    utterance.pitch = 1.0;
+    setTimeout(() => {
+      const cleanText = text.replace(/\//g, ' ').trim();
+      const utterance = new SpeechSynthesisUtterance(cleanText);
+      utterance.lang = 'ko-KR';
+      utterance.rate = 1.0;
+      utterance.pitch = 1.0;
 
-    currentUtterance = utterance;
+      currentUtterance = utterance;
 
-    utterance.onend = () => {
-      currentUtterance = null;
-    };
+      utterance.onend = () => {
+        currentUtterance = null;
+        resolve();
+      };
 
-    utterance.onerror = (event) => {
-      console.error("SpeechSynthesis error:", event);
-      currentUtterance = null;
-    };
+      utterance.onerror = (event) => {
+        console.error("SpeechSynthesis error:", event);
+        currentUtterance = null;
+        resolve();
+      };
 
-    window.speechSynthesis.speak(utterance);
-  }, 50);
+      window.speechSynthesis.speak(utterance);
+    }, 50);
+  });
 };
