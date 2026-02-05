@@ -11,7 +11,8 @@ export enum AppMode {
 export enum Category {
   OPIC = 'OPIC',
   SUBJECT_VERB = 'SUBJECT_VERB',
-  AI_ENGINEERING = 'AI_ENGINEERING' // 내부 호환성을 위해 유지
+  AI_ENGINEERING = 'AI_ENGINEERING',
+  SENTENCE_STRUCTURE = 'SENTENCE_STRUCTURE' // 1~5형식 문장 구조 연습
 }
 
 export interface WordItem {

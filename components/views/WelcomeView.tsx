@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { BookOpen, Languages, PlusCircle, Settings } from 'lucide-react';
+import { BookOpen, Languages, PlusCircle, Settings, Layers } from 'lucide-react';
 import { Category } from '../../types';
 import { HomeCard } from '../HomeCard';
 import { Button } from '../Button';
@@ -25,8 +25,15 @@ export const WelcomeView: React.FC<WelcomeViewProps> = ({ counts, onLoadCategory
 
         <div className="flex flex-col gap-3 w-full">
           <HomeCard 
+            icon={<Layers size={18} />} 
+            title="1~5 Types Practice" 
+            desc={`${counts[Category.SENTENCE_STRUCTURE] || 0} patterns`}
+            color="indigo"
+            onClick={() => onLoadCategory(Category.SENTENCE_STRUCTURE)}
+          />
+          <HomeCard 
             icon={<Languages size={18} />} 
-            title="S+V Pattern Practice" 
+            title="S+V Chunk Practice" 
             desc={`${counts[Category.SUBJECT_VERB] || 0} patterns`}
             color="indigo"
             onClick={() => onLoadCategory(Category.SUBJECT_VERB)}
@@ -34,7 +41,7 @@ export const WelcomeView: React.FC<WelcomeViewProps> = ({ counts, onLoadCategory
           <HomeCard 
             icon={<BookOpen size={18} />} 
             title="OPIc Preparation" 
-            desc={`${counts[Category.OPIC] || 0} phrases`}
+            desc={`${counts[Category.OPIC] || 0} topics`}
             color="orange"
             onClick={() => onLoadCategory(Category.OPIC)}
           />

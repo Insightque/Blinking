@@ -102,7 +102,6 @@ const App: React.FC = () => {
   const handleDeleteSentenceSet = useCallback((id: string) => {
     if(confirm("이 문장 세트를 삭제하시겠습니까?")) {
       deleteSentenceSet(id);
-      // Trigger a re-render of topics list to update map
       setAvailableSets(prev => [...prev]);
       playSound('pop');
     }
@@ -112,7 +111,8 @@ const App: React.FC = () => {
     const all = getAllSets();
     return {
       [Category.OPIC]: all.filter(s => s.category === Category.OPIC).reduce((acc, s) => acc + s.words.length, 0),
-      [Category.SUBJECT_VERB]: all.filter(s => s.category === Category.SUBJECT_VERB).reduce((acc, s) => acc + s.words.length, 0)
+      [Category.SUBJECT_VERB]: all.filter(s => s.category === Category.SUBJECT_VERB).reduce((acc, s) => acc + s.words.length, 0),
+      [Category.SENTENCE_STRUCTURE]: all.filter(s => s.category === Category.SENTENCE_STRUCTURE).reduce((acc, s) => acc + s.words.length, 0)
     };
   }, [availableSets]);
 

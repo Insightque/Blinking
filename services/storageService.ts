@@ -3,6 +3,7 @@ import { Category, WordSet, WordItem, SentenceSet } from "../types";
 import { OPIC_SEED_DATA } from "../data/opicData";
 import { AI_SEED_DATA } from "../data/aiData";
 import { SV_SEED_DATA } from "../data/svData";
+import { OPIC_EXTENDED_TOPICS } from "../data/extendedOpicData";
 
 const SETS_KEY = 'lingofocus_word_sets_v3'; 
 const SENTENCE_SETS_KEY = 'lingofocus_sentence_sets_v1';
@@ -19,29 +20,59 @@ const mapToWordItems = (raw: Partial<WordItem>[], prefix: string): WordItem[] =>
   }));
 };
 
-const createSeedSets = (): WordSet[] => [
-  {
-    id: 'seed-sv-basic',
-    category: Category.SUBJECT_VERB,
-    topic: 'Basic Sentence Patterns (System)',
-    createdAt: new Date().toISOString(),
-    words: mapToWordItems(SV_SEED_DATA, 'sv-seed')
-  },
-  {
-    id: 'seed-opic-basic',
-    category: Category.OPIC,
-    topic: 'OPIc Essential Phrases (System)',
-    createdAt: new Date().toISOString(),
-    words: mapToWordItems(OPIC_SEED_DATA, 'opic-seed')
-  },
-  {
-    id: 'seed-ai-basic',
-    category: Category.AI_ENGINEERING,
-    topic: 'AI/Tech Core Vocab (System)',
-    createdAt: new Date().toISOString(),
-    words: mapToWordItems(AI_SEED_DATA, 'ai-seed')
-  }
-];
+const createSeedSets = (): WordSet[] => {
+  const seeds = [
+    {
+      id: 'seed-sv-basic',
+      category: Category.SUBJECT_VERB,
+      topic: 'Basic Sentence Patterns (System)',
+      createdAt: new Date().toISOString(),
+      words: mapToWordItems(SV_SEED_DATA, 'sv-seed')
+    },
+    {
+      id: 'seed-opic-basic',
+      category: Category.OPIC,
+      topic: 'OPIc Essential Phrases (System)',
+      createdAt: new Date().toISOString(),
+      words: mapToWordItems(OPIC_SEED_DATA, 'opic-seed')
+    },
+    {
+      id: 'seed-ai-basic',
+      category: Category.AI_ENGINEERING,
+      topic: 'AI/Tech Core Vocab (System)',
+      createdAt: new Date().toISOString(),
+      words: mapToWordItems(AI_SEED_DATA, 'ai-seed')
+    },
+    {
+      id: 'seed-structure-basic',
+      category: Category.SENTENCE_STRUCTURE,
+      topic: '1-5 Basic Sentence Structures',
+      createdAt: new Date().toISOString(),
+      words: [
+        { id: 'st-1', korean: "태양은 빛난다", english: "The sun shines", partOfSpeech: "1st Type (S+V)", reviewCount: 0 },
+        { id: 'st-2', korean: "그는 의사이다", english: "He is a doctor", partOfSpeech: "2nd Type (S+V+C)", reviewCount: 0 },
+        { id: 'st-3', korean: "나는 사과를 먹는다", english: "I eat an apple", partOfSpeech: "3rd Type (S+V+O)", reviewCount: 0 },
+        { id: 'st-4', korean: "그녀는 나에게 선물을 주었다", english: "She gave me a gift", partOfSpeech: "4th Type (S+V+IO+DO)", reviewCount: 0 },
+        { id: 'st-5', korean: "우리는 그를 천재라고 부른다", english: "We call him a genius", partOfSpeech: "5th Type (S+V+O+OC)", reviewCount: 0 },
+      ]
+    }
+  ];
+
+  // 50가지 확장 주제를 빈 세트로 추가 (사용자가 클릭 시 생성하거나 목록에서 확인 가능하도록)
+  // 여기서는 구조만 잡아두고 실제 생성은 AI가 하도록 유도하는 것이 효율적입니다.
+  // 또는 간단한 시드만 추가합니다.
+  OPIC_EXTENDED_TOPICS.slice(0, 10).forEach((topic, idx) => {
+    seeds.push({
+      id: `seed-opic-ext-${idx}`,
+      category: Category.OPIC,
+      topic: topic,
+      createdAt: new Date().toISOString(),
+      words: [] // Placeholder
+    });
+  });
+
+  return seeds;
+};
 
 export const getAllSets = (): WordSet[] => {
   const stored = localStorage.getItem(SETS_KEY);
@@ -62,12 +93,10 @@ export const saveNewSet = (newSet: WordSet) => {
 export const deleteSet = (setId: string) => {
   const sets = getAllSets().filter(s => s.id !== setId);
   localStorage.setItem(SETS_KEY, JSON.stringify(sets));
-  // Delete associated sentences
   const sentenceSets = getAllSentenceSets().filter(ss => ss.wordSetId !== setId);
   localStorage.setItem(SENTENCE_SETS_KEY, JSON.stringify(sentenceSets));
 };
 
-// Sentence Storage Logic
 export const getAllSentenceSets = (): SentenceSet[] => {
   const stored = localStorage.getItem(SENTENCE_SETS_KEY);
   return stored ? JSON.parse(stored) : [];

@@ -26,13 +26,13 @@ export const GeneratorView: React.FC<GeneratorViewProps> = ({ onBack, onGenerate
            <div className="space-y-4">
              <label className="text-[11px] font-black uppercase tracking-widest text-slate-400">1. Category</label>
              <div className="grid grid-cols-2 gap-2">
-               {[Category.OPIC, Category.SUBJECT_VERB].map(cat => (
+               {[Category.OPIC, Category.SUBJECT_VERB, Category.SENTENCE_STRUCTURE].map(cat => (
                  <button 
                   key={cat} 
                   onClick={() => setGenCategory(cat)} 
                   className={`py-4 px-2 rounded-2xl text-[10px] font-black transition-all border-2 ${genCategory === cat ? 'bg-indigo-600 border-indigo-600 text-white' : 'bg-slate-50 border-slate-100 text-slate-400'}`}
                  >
-                   {cat === Category.SUBJECT_VERB ? "S+V Pattern" : "OPIc Speaking"}
+                   {cat === Category.SUBJECT_VERB ? "S+V Pattern" : cat === Category.SENTENCE_STRUCTURE ? "1-5 Structures" : "OPIc Speaking"}
                  </button>
                ))}
              </div>

@@ -8,21 +8,26 @@ export const generateWordSet = async (category: Category, topic: string): Promis
   let systemInstruction = "";
   if (category === Category.OPIC) {
     systemInstruction = "You are an expert OPIc English coach. Generate high-frequency, natural conversational expressions strictly for IH (Intermediate High) level. Focus on clear, idiomatic expressions that are practical for speaking tests.";
+  } else if (category === Category.SENTENCE_STRUCTURE) {
+    systemInstruction = "You are an English linguistics expert. Your task is to generate simple sentences categorized by the 5 English Sentence Types (1st to 5th). 1st: S+V, 2nd: S+V+C, 3rd: S+V+O, 4th: S+V+IO+DO, 5th: S+V+O+OC. Keep them simple and focused on the structure.";
   } else {
-    systemInstruction = "You are an English syntax specialist. You create short 'Subject + Verb' pattern chunks (e.g., 'I've decided to', 'She is planning on'). Your goal is to help students practice the core 'Subject + Verb' structure. The Korean translation MUST use slashes (/) to match the English word order exactly.";
+    systemInstruction = "You are an English syntax specialist. You create short 'Subject + Verb' pattern chunks. The Korean translation MUST use slashes (/) to match the English word order exactly.";
   }
 
-  const prompt = `Generate a JSON array of 50 English training items for topic: "${topic}".
+  const prompt = `Generate a JSON array of 30 English training items for topic: "${topic}".
   Category: ${category}.
 
-  ${category === Category.SUBJECT_VERB ? 
+  ${category === Category.SENTENCE_STRUCTURE ? 
+    `CRITICAL RULES for Sentence Structure category:
+    1. Distribute items across all 5 types (1st, 2nd, 3rd, 4th, 5th).
+    2. Mark the type in 'partOfSpeech' field (e.g., "1st Type (S+V)").
+    3. Keep sentences simple but relevant to the topic "${topic}".`
+    : category === Category.SUBJECT_VERB ? 
     `CRITICAL RULES for S+V Pattern category:
-    1. Items MUST be short 'Subject + Verb' pattern chunks (max 4-6 words). NOT full complex sentences.
-    2. Korean field MUST use slashes (/) to mirror English word order. 
-       Example: English: "I'm planning to", Korean: "나는 / 계획 중이다"
-    3. The 'partOfSpeech' MUST be "pattern".` 
+    1. Items MUST be short 'Subject + Verb' pattern chunks.
+    2. Korean field MUST use slashes (/) to mirror English word order.` 
     : 
-    `Include a realistic professional example sentence for each item.`
+    `Include a realistic IH level conversational example sentence for each item.`
   }
   
   Return ONLY the JSON array.`;
@@ -72,18 +77,14 @@ export const generateWordSet = async (category: Category, topic: string): Promis
 
 export const generateSentenceSet = async (wordSet: WordSet): Promise<SentenceSet> => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-  
-  // 학습 세트 내의 핵심 표현들을 추출하여 프롬프트에 포함
   const expressions = wordSet.words.map(w => w.english).slice(0, 15).join(", ");
   
   const systemInstruction = `You are a professional OPIc trainer. Create 10 natural OPIc responses strictly at IH (Intermediate High) level. 
-  The responses should be conversational, enthusiastic, and clear, using common fillers like 'You know', 'I mean', 'Well', and 'Let me see'. 
-  Focus on structures that demonstrate a high level of fluency without being overly academic.`;
+  Focus on structures that demonstrate fluency.`;
   
   const prompt = `Topic: "${wordSet.topic}". 
-  Please create 10 expressive OPIc answer sentences in a JSON array. 
-  CRITICAL: You MUST naturally incorporate some of these expressions from the current study set: [${expressions}].
-  Each sentence should sound like a real person answering Eva in a conversational way.`;
+  Create 10 expressive OPIc answer sentences in a JSON array. 
+  CRITICAL: You MUST naturally incorporate expressions like [${expressions}].`;
 
   try {
     const response = await ai.models.generateContent({
