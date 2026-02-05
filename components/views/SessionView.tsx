@@ -4,7 +4,7 @@ import { Play, Pause, ChevronRight, ChevronLeft, Repeat, Volume2, Minus, Plus, Q
 import { WordItem, SessionSettings } from '../../types';
 import { Header } from '../Header';
 import { Button } from '../Button';
-import { playSound, speakEnglish, speakKorean } from '../../services/audioService';
+import { playSound, speakEnglish, speakKorean, stopSpeech } from '../../services/audioService';
 
 interface SessionViewProps {
   topic: string;
@@ -37,10 +37,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
   const clearTimers = useCallback(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
     if (tickIntervalRef.current) clearInterval(tickIntervalRef.current);
-    // TTS 중단
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-    }
+    stopSpeech();
   }, []);
 
   const handleNextWord = useCallback(() => {
@@ -68,6 +65,15 @@ export const SessionView: React.FC<SessionViewProps> = ({
       onExit();
     }
   }, [clearTimers, onExit]);
+
+  // 일시정지 버튼 클릭 시 음성 즉시 중단 처리
+  const togglePause = useCallback(() => {
+    const newPausedState = !isPaused;
+    setIsPaused(newPausedState);
+    if (newPausedState) {
+      stopSpeech();
+    }
+  }, [isPaused]);
 
   useEffect(() => {
     clearTimers();
@@ -208,7 +214,7 @@ export const SessionView: React.FC<SessionViewProps> = ({
                 <Button type="button" onClick={handlePreviousWord} disabled={currentIndex === 0} variant="secondary" className="px-4 sm:px-10 py-4 sm:py-5 rounded-[1.5rem] sm:rounded-[2rem]">
                   <ChevronLeft size={24} className="sm:size-[32px]" />
                 </Button>
-                <Button type="button" onClick={() => setIsPaused(!isPaused)} variant={isPaused ? "primary" : "outline"} className="flex-1 flex items-center justify-center gap-2 sm:gap-4 py-4 sm:py-5 rounded-[1.5rem] sm:rounded-[2rem] text-xs sm:text-base font-black uppercase tracking-tight sm:tracking-[0.2em] shadow-lg">
+                <Button type="button" onClick={togglePause} variant={isPaused ? "primary" : "outline"} className="flex-1 flex items-center justify-center gap-2 sm:gap-4 py-4 sm:py-5 rounded-[1.5rem] sm:rounded-[2rem] text-xs sm:text-base font-black uppercase tracking-tight sm:tracking-[0.2em] shadow-lg">
                   {isPaused ? <><Play size={20} className="sm:size-[28px]" fill="currentColor" /> Resume</> : <><Pause size={20} className="sm:size-[28px]" fill="currentColor" /> Pause</>}
                 </Button>
                 <Button type="button" onClick={handleNextWord} className="px-4 sm:px-10 py-4 sm:py-5 rounded-[1.5rem] sm:rounded-[2rem]">
